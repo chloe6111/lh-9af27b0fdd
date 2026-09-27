@@ -12,16 +12,25 @@
 (function(){
   var inFrame=window!==window.top||/[?&]frame=1/.test(location.search);
   if(inFrame){document.documentElement.classList.add('inframe');if(/[?&]desk=1/.test(location.search)) document.documentElement.classList.add('desk');return}
-  var touch=matchMedia('(pointer:coarse)').matches;
-  if(touch||window.innerHeight<=540) return;          // phones and small windows use the page directly
-  var src=location.href.replace(/#.*$/,'');src+=(src.indexOf('?')<0?'?':'&')+'frame=1&desk=1';
+  var touch=matchMedia('(pointer:coarse)').matches||/[?&]tablet=1/.test(location.search);
+  var small=Math.min(window.innerWidth,window.innerHeight)<=540||(window.innerWidth<window.innerHeight&&window.innerWidth<=600);
+  if(small) return;                                    // phones and small windows use the page directly
+  // big touch screens (an unfolded foldable, a tablet) get the phone layout, scaled up; mouse screens get the desktop layout
+  var TAB=touch;
+  var src=location.href.replace(/#.*$/,'');src+=(src.indexOf('?')<0?'?':'&')+(TAB?'frame=1':'frame=1&desk=1');
   document.write('<style>html,body{margin:0;height:100%;overflow:hidden;background:#0e0d0b}'+
-    '#stage{position:fixed;left:0;top:0;border:0;display:block;background:#0e0d0b;transform-origin:0 0}</style>'+
-    '<iframe id="stage" title="The Last Hour" allow="fullscreen" src="'+src.replace(/"/g,'&quot;')+'"></iframe>');
+    '#stage{position:fixed;left:0;top:0;border:0;display:block;background:#0e0d0b;transform-origin:0 0}'+
+    '#tabgate{display:none;position:fixed;inset:0;z-index:5;background:#0d0c0a;color:#ece4cf;align-items:center;justify-content:center;text-align:center;font-family:Georgia,serif}'+
+    '#tabgate.on{display:flex}#tabgate p{font-size:2rem;margin:0 0 18px}#tabgate button{font:600 1.2rem Georgia,serif;padding:14px 34px;border-radius:999px;border:0;background:#6fb3a1;color:#0d1311}'+
+    '#tabgate small{display:block;color:#8d8570;margin-top:14px;font-size:.95rem}</style>'+
+    '<iframe id="stage" title="The Last Hour" allow="fullscreen" src="'+src.replace(/"/g,'&quot;')+'"></iframe>'+
+    (TAB?'<div id="tabgate"><div><p>The Last Hour</p><button id="tabfs">Play in full screen</button><small>Best played sideways, in full screen.</small></div></div>':''));
   function fit(){
     var f=document.getElementById('stage');if(!f) return;
-    var W=window.innerWidth,H=window.innerHeight,h=900,z=H/h,w=W/z;
-    if(w<1440){w=1440;z=W/w;}                        // narrower than 16:10: letterbox top and bottom
+    // while someone types in the game (a note), the on-screen keyboard shrinks the page: don't refit under them
+    try{var ae=f.contentDocument&&f.contentDocument.activeElement;if(ae&&/^(INPUT|TEXTAREA)$/.test(ae.tagName)&&f.style.width) return}catch(e){}
+    var W=window.innerWidth,H=window.innerHeight,h=TAB?536:900,minW=TAB?700:1440,z=H/h,w=W/z;
+    if(w<minW){w=minW;z=W/w;}                        // narrower than the layout needs: letterbox top and bottom
     w=Math.floor(w);f.style.width=w+'px';f.style.height=h+'px';
     // scale with a transform: changing CSS zoom on a live frame doesn't reliably reach the page inside
     f.style.transform='translate('+Math.round((W-w*z)/2)+'px,'+Math.round((H-h*z)/2)+'px) scale('+z+')';
@@ -31,6 +40,11 @@
   var lastWH='';setInterval(function(){var k=window.innerWidth+'x'+window.innerHeight;if(k!==lastWH){lastWH=k;fit()}},500);   // safety net for hosts that skip resize events
   document.addEventListener('DOMContentLoaded',function(){fit();var f=document.getElementById('stage');f.addEventListener('load',function(){f.focus()});});
   document.addEventListener('mousedown',function(){var f=document.getElementById('stage');if(f) f.focus()});
+  if(TAB){
+    var gate=function(){var g=document.getElementById('tabgate');if(g) g.classList.toggle('on',!!document.fullscreenEnabled&&!document.fullscreenElement)};
+    document.addEventListener('fullscreenchange',gate);document.addEventListener('DOMContentLoaded',function(){gate();
+      document.getElementById('tabfs').addEventListener('click',function(){document.documentElement.requestFullscreen().then(function(){if(screen.orientation&&screen.orientation.lock) screen.orientation.lock('landscape').catch(function(){})}).catch(function(){}).then(gate)})});
+  }
   // the game asks the page to toggle fullscreen (its own frame can't fill the screen with the right scale)
   window.addEventListener('message',function(e){
     if(e.data!=='lh-fullscreen') return;
@@ -4631,7 +4645,7 @@ document.addEventListener('click',e=>{
 },true);
 /* in the desktop frame, the window can change size (fullscreen on/off, resizing); lay the pages out again once it settles.
    (Not on phones: the on-screen keyboard resizes the page, and a re-render would drop the text box.) */
-if(document.documentElement.classList.contains('inframe')){let rt=0;window.addEventListener('resize',()=>{clearTimeout(rt);rt=setTimeout(()=>{if(typeof render==='function') render()},300)})}
+if(document.documentElement.classList.contains('inframe')){let rt=0;window.addEventListener('resize',()=>{clearTimeout(rt);rt=setTimeout(()=>{if(document.activeElement&&/^(INPUT|TEXTAREA)$/.test(document.activeElement.tagName)) return;if(typeof render==='function') render()},300)})}
 /* desktop hierarchy chart: after drawing, shrink the figures until every station fits (estimates can't know every border) */
 function fitChart(){
   const sh=document.querySelector('.dchart');if(!sh) return;
@@ -4642,7 +4656,7 @@ function fitChart(){
 function runPaging(){if(!PHONE_LS.matches&&!DESK) return;document.querySelectorAll('[data-page]').forEach(el=>{if(!el.classList.contains('paged')) paginate(el)})}
 PHONE_LS.addEventListener&&PHONE_LS.addEventListener('change',()=>{if(typeof render==='function') render()});
 /* full-screen gate on touch devices that support it */
-function updFsGate(){const need=matchMedia('(pointer:coarse)').matches&&document.fullscreenEnabled&&!document.fullscreenElement;document.documentElement.classList.toggle('needfs',!!need)}
+function updFsGate(){const need=!document.documentElement.classList.contains('inframe')&&matchMedia('(pointer:coarse)').matches&&document.fullscreenEnabled&&!document.fullscreenElement;document.documentElement.classList.toggle('needfs',!!need)}
 document.addEventListener('fullscreenchange',updFsGate);
 document.getElementById('fsbtn').addEventListener('click',()=>{document.documentElement.requestFullscreen().then(()=>screen.orientation&&screen.orientation.lock&&screen.orientation.lock('landscape').catch(()=>{})).catch(()=>{}).finally(updFsGate)});
 updFsGate();
