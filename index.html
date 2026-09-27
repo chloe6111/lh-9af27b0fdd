@@ -4666,14 +4666,14 @@ const TIPS=[
    text:()=>'Your goal for every person: <b>who they were, how they died, and who killed them</b> if someone did. You can change these answers any time. Nothing is final until you <b>Consult the Ledger</b>.'},
   {id:'people',when:()=>!!ui.mem&&!ui.cine&&!ui.modal&&!ui.pick&&!ui.sheet,at:()=>$vis('.mtab.on[data-t="people"] .present .chip'),
    text:()=>'Everyone present in this memory. <b>Tap any of them</b> to open their card, see where else they appear, and record who you think they are.'},
-  {id:'notes',when:()=>!ui.cine&&!ui.modal&&!ui.pick,at:()=>$vis('.mtab.on[data-t="notes"] .ntagadd')||$vis('.snotes .ntagadd'),
+  {id:'notes',when:()=>!!ui.mem&&!ui.cine&&!ui.modal&&!ui.pick&&!ui.sheet,at:()=>$vis('.mtab.on[data-t="notes"] .ntagadd'),   // the memory's Notes tab only
    text:()=>'Tag what you already know about this person (a relative, the kind of death, a role, a homeland) or jot a short note, so you can <b>come back and solve them later</b>.'},
   {id:'pages',when:()=>S.screen==='play'&&!ui.cine&&!ui.modal&&!ui.pick&&(ui.mem||ui.tab==='manifest'||ui.sheet),at:()=>$vis('.pdots'),
    text:()=>DESK?'There’s more here than fits on one page. <b>Scroll the mouse wheel or click a dot</b> to turn the page; the bright dot shows where you are.':'There’s more here than fits on one page. <b>Swipe sideways or tap a dot</b> to turn the page; the bright dot shows where you are.'},
   {id:'relics',when:()=>S.screen==='play'&&ui.tab==='satchel'&&!ui.modal&&!ui.pick&&!ui.sheet&&!ui.mem,at:()=>$vis('#app [data-act="tool"]:not([disabled])'),
    text:()=>'Your relics live here. <b>Press Use</b> to activate one: most reveal something, like a name, a homeland or a cause of death. Relics without a Use button work on their own.'},
   {id:'num',when:onDead,at:()=>$vis('.pcard .pnum'),
-   text:()=>'This circle is the person’s number. <b>Until you prove who they are, “#2” is their name</b>: in memories, pickers and notes alike.'},
+   text:()=>'This circle is the person’s number. <b>Until you prove who they are, “#1” is their name</b>: in memories, pickers and notes alike.'},
   {id:'time',when:onDead,at:()=>$vis('.pcard .ptime'),
    text:()=>'Once you’ve watched someone’s memory, the corner shows <b>the time it happened</b> that night. Line the times up to work out who was still alive when.'},
   {id:'consult',when:()=>onDead()&&ui.backFromMem,at:()=>$vis('.topact [data-act="consult"]')||$vis('[data-act="consult"]'),
@@ -4693,14 +4693,15 @@ function showTip(t,el){
   const r=el.getBoundingClientRect(),pad=6,ov=document.createElement('div');
   ov.id='tipov';ov.setAttribute('role','dialog');ov.setAttribute('aria-label','Tip');
   const hole={l:r.left-pad,t:r.top-pad,w:r.width+pad*2,h:r.height+pad*2};
-  ov.innerHTML=`<div class="tiphole" style="left:${hole.l}px;top:${hole.t}px;width:${hole.w}px;height:${hole.h}px"></div><div class="tipcard"><div class="tipk">Tip</div><p>${t.text()}</p><button class="btn primary tipok">Got it</button></div>`;
+  ov.innerHTML=`<div class="tiphole" style="left:${hole.l}px;top:${hole.t}px;width:${hole.w}px;height:${hole.h}px"></div><div class="tipcard"><p>${t.text()}</p><button class="btn primary tipok">Got it</button></div>`;
   document.body.append(ov);
   // the card goes below the highlight if there's room, otherwise above, otherwise beside it
   const card=ov.querySelector('.tipcard'),cw=Math.min(380,innerWidth-24);card.style.width=cw+'px';
   const ch=card.offsetHeight,below=hole.t+hole.h+12,above=hole.t-12-ch;
   let top=below+ch<innerHeight-8?below:above>8?above:Math.max(8,Math.min(innerHeight-ch-8,hole.t));
-  let left=Math.max(12,Math.min(innerWidth-cw-12,hole.l+hole.w/2-cw/2));
-  if(top===Math.max(8,Math.min(innerHeight-ch-8,hole.t))&&!(below+ch<innerHeight-8)&&!(above>8)) left=hole.l+hole.w+14+cw<innerWidth?hole.l+hole.w+14:Math.max(12,hole.l-cw-14);
+  const dock=[...document.querySelectorAll('.dock')].find(d=>{const b=d.getBoundingClientRect();return b.left<=1&&b.height>b.width&&b.width>0}),minL=(dock?dock.getBoundingClientRect().right:0)+12;   // stay clear of the side icon bar
+  let left=Math.max(minL,Math.min(innerWidth-cw-12,hole.l+hole.w/2-cw/2));
+  if(top===Math.max(8,Math.min(innerHeight-ch-8,hole.t))&&!(below+ch<innerHeight-8)&&!(above>8)) left=hole.l+hole.w+14+cw<innerWidth?hole.l+hole.w+14:Math.max(minL,hole.l-cw-14);
   card.style.top=top+'px';card.style.left=left+'px';
   const close=()=>{tipDone(t.id);if(t.id==='consult') ui.backFromMem=false;ov.remove();setTimeout(tutorialCheck,250)};
   ov.querySelector('.tipok').addEventListener('click',e=>{e.stopPropagation();close()});
