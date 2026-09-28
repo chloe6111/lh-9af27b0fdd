@@ -9,6 +9,19 @@
 /* Desktop / Steam: the game gets its own no-scroll desktop layout (html.desk). The page hosts it in a frame with a
    fixed desktop canvas, 900 px tall and at least 1440 wide (wider on wide screens), scaled to fill the monitor
    (1920x1080 -> 1600x900 at 1.2x; 1280x800 -> 1440x900 at 0.89x). */
+/* ?diag=1 shows what the page detected about this screen (for tuning phones, foldables and tablets) */
+(function(){if(!/[?&]diag=1/.test(location.search)||window!==window.top) return;
+  var NL=String.fromCharCode(10);
+  var show=function(){var f=document.getElementById('stage'),d=document.getElementById('lhdiag');
+    if(!d){d=document.createElement('pre');d.id='lhdiag';d.style.cssText='position:fixed;left:6px;bottom:6px;z-index:9999;margin:0;padding:6px 8px;background:rgba(0,0,0,.85);color:#9f9;font:12px/1.35 monospace;border-radius:6px;pointer-events:none;white-space:pre';document.body.appendChild(d)}
+    var lines=['mode '+(f?(f.src.indexOf('desk=1')>0?'DESKTOP frame':'TABLET frame'):'DIRECT page'),
+      'window '+innerWidth+'x'+innerHeight+' dpr '+devicePixelRatio,'screen '+screen.width+'x'+screen.height,
+      'coarse '+matchMedia('(pointer:coarse)').matches+' anyFine '+matchMedia('(any-pointer:fine)').matches+' touchPts '+navigator.maxTouchPoints,
+      'fullscreen '+!!document.fullscreenElement,navigator.userAgent.slice(0,90)];
+    try{if(f){var w=f.contentWindow;lines.push('frame '+f.style.width+' '+f.style.transform,'inner '+w.innerWidth+'x'+w.innerHeight+' phoneLayout '+w.matchMedia('(orientation:landscape) and (max-height:540px)').matches+' desk '+w.document.documentElement.classList.contains('desk'))}}catch(e){lines.push('frame err '+e.message)}
+    d.textContent=lines.join(NL)};
+  document.addEventListener('DOMContentLoaded',function(){show();setInterval(show,1000)});
+})();
 (function(){
   var inFrame=window!==window.top||/[?&]frame=1/.test(location.search);
   if(inFrame){document.documentElement.classList.add('inframe');if(/[?&]desk=1/.test(location.search)) document.documentElement.classList.add('desk');return}
