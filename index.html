@@ -12,9 +12,14 @@
 (function(){
   var inFrame=window!==window.top||/[?&]frame=1/.test(location.search);
   if(inFrame){document.documentElement.classList.add('inframe');if(/[?&]desk=1/.test(location.search)) document.documentElement.classList.add('desk');return}
-  var touch=matchMedia('(pointer:coarse)').matches||/[?&]tablet=1/.test(location.search);
-  var small=Math.min(window.innerWidth,window.innerHeight)<=540||(window.innerWidth<window.innerHeight&&window.innerWidth<=600);
-  if(small) return;                                    // phones and small windows use the page directly
+  // a touchscreen with no mouse or trackpad (Chrome's "desktop site" mode on big Android screens can hide pointer:coarse)
+  var touch=matchMedia('(pointer:coarse)').matches||(navigator.maxTouchPoints>0&&!matchMedia('(any-pointer:fine)').matches)||/[?&]tablet=1/.test(location.search);
+  var isSmall=function(){return Math.min(window.innerWidth,window.innerHeight)<=540||(window.innerWidth<window.innerHeight&&window.innerWidth<=600)};
+  // folding or unfolding a phone crosses between the phone page and the big-screen frame: reload once to switch (the game is saved)
+  var typing=function(){try{var a=document.activeElement;if(a&&a.tagName==='IFRAME'&&a.contentDocument) a=a.contentDocument.activeElement;return !!(a&&/^(INPUT|TEXTAREA)$/.test(a.tagName))}catch(e){return false}};   // the on-screen keyboard shrinks the page
+  var watch=function(wasSmall){var t=0;window.addEventListener('resize',function(){clearTimeout(t);t=setTimeout(function(){if(isSmall()!==wasSmall&&!typing()) location.reload()},600)})};
+  if(isSmall()){watch(true);return}                   // phones and small windows use the page directly
+  watch(false);
   // big touch screens (an unfolded foldable, a tablet) get the phone layout, scaled up; mouse screens get the desktop layout
   var TAB=touch;
   var src=location.href.replace(/#.*$/,'');src+=(src.indexOf('?')<0?'?':'&')+(TAB?'frame=1':'frame=1&desk=1');
