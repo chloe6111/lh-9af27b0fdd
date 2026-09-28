@@ -9,7 +9,7 @@
 /* Live site: the page itself can be cached for a while after a publish, while maps.js etc. come fresh, so an old page
    could show new data. version.txt holds the build stamp; if it differs, load the page again under a new URL.
    BUILD stays 'dev' in the project; stamp_build.py writes the stamp into dist/index.html and dist/version.txt. */
-(function(){var BUILD='20260927233742';if(BUILD==='dev'||window!==window.top||!window.fetch||location.protocol==='file:') return;
+(function(){var BUILD='20260927234725';if(BUILD==='dev'||window!==window.top||!window.fetch||location.protocol==='file:') return;
   fetch('version.txt?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.ok?r.text():''}).then(function(v){
     v=(v||'').trim();if(!v||v===BUILD) return;
     try{var k='lh-build-'+v;if(sessionStorage.getItem(k)) return;sessionStorage.setItem(k,'1')}catch(e){return}
@@ -937,7 +937,8 @@ html.desk .pcard .blindph,html.desk .membust .blindph,html.desk .bust .blindph,h
 .reglucky{display:flex;align-items:center;gap:12px;margin:0 0 12px;padding:10px 14px;border:1.5px solid #d8b86a;border-radius:14px;background:linear-gradient(135deg,rgba(216,184,106,.18),rgba(216,184,106,.05));color:var(--ink)}
 .reglucky b{color:#e8c870;font-family:var(--display);font-size:1.12em;font-weight:400}
 .reglucky small{display:block;color:var(--muted);font-size:.8rem;margin-top:2px}
-.regtwo .reglucky{padding:6px 12px;margin-bottom:8px}@media (orientation:landscape) and (max-height:540px){.regtwo .reglucky small{display:none}.regtwo .reglucky{margin-bottom:6px}}
+.regtwo .reglucky{padding:6px 12px;margin-bottom:8px}.regname{display:none}
+@media (orientation:landscape) and (max-height:540px){.regtwo{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 10px}.regtwo .reglucky{margin:0;padding:4px 12px 4px 8px;gap:6px;border-radius:999px}.regtwo .reglucky>div{display:none}.regtwo .regname{display:inline;font-size:.86rem;color:#e8c870}.regtwo .regkey svg{width:20px;height:20px}}
 .regkey{flex:none;color:#e8c870;display:grid;place-items:center;width:42px;height:42px;border-radius:50%;background:rgba(216,184,106,.14)}
 .reglucky.luck{animation:lh-luck 1.6s ease-out .3s both}
 .reglucky.luck .regkey{animation:lh-keyturn 1.2s cubic-bezier(.3,1.4,.5,1) .6s both}
@@ -1103,7 +1104,7 @@ html.nomotion .cports .cport,html.nomotion .cports .cfull img,html.nomotion .cin
 <script src="pieces.js?v=4c6edf9d"></script>
 <script src="stacker.js?v=4c6edf9d"></script>
 <script src="maps.js?v=50a871d3"></script>
-<script src="relic_icons.js?v=9c43f9ce"></script>
+<script src="relic_icons.js?v=c4eb76f1"></script>
 <script>
 
 /* ---------- utilities ---------- */
@@ -1501,6 +1502,7 @@ REWARDS.length=0;Object.keys(REW).forEach(k=>delete REW[k]);
   {id:'lens',name:'Magnifying Lens',rar:'r',kind:'charge',uses:2,tags:['x2','Clue'],desc:'Twice, choose someone’s memory and uncover one extra hidden detail in it.'},
   {id:'tattoo',name:'Tattooist’s Eye',rar:'r',kind:'relic',perEra:2,tags:['Permanent','2 per era','Relationship'],desc:'Twice per era, learn whether a chosen person has family among the dead.'},
   {id:'nav',name:'Navigator',rar:'r',kind:'relic',tags:['Permanent','Death'],desc:'Unlocks the traveller’s map for the rest of the run: tap a place a survivor mentions to see where they were headed.'},
+  {id:'trans',name:'Translator',rar:'r',kind:'relic',tags:['Permanent','Homeland'],desc:'Every language spoken in the memories is named, starting now and in every era after. Without it, some voices speak a language you don’t recognise.'},
   {id:'herald',name:'Seal of the House',rar:'r',kind:'relic',perEra:1,tags:['Permanent','1 per era','Name'],desc:'Once per era, choose a person and learn their surname.'},
   {id:'interro',name:'Interrogator',rar:'r',kind:'relic',perEra:1,tags:['Permanent','1 per era','Name'],desc:'Once per era, ask whether a person bears the name you gave them.'},
   {id:'paste',name:'Archivist’s Paste',rar:'r',kind:'charge',uses:1,tags:['x1','Name'],desc:'Paste a torn page back together: restore one damaged surname in full.'},
@@ -3606,7 +3608,9 @@ const initMatch=(pat,ch)=>{if(pat===TORN) return true;const x=pat[mainIdx(pat)];
 /* ---------- solver ---------- */
 function unaryOK(era,f,c,cl){
   const x=era.chars[c],rec=era.rec;
-  if(cl.type==='origin') return !rec.origin[c]||patMatch(dVal(era,c,'origin'),ERAS[era.key].origins[cl.v].name);
+  if(cl.type==='origin'){const O=ERAS[era.key].origins;if(!rec.origin[c]) return true;
+    if(era.muted&&era.muted[f]&&O[cl.v].L) return O.some(o=>o.L&&patMatch(dVal(era,c,'origin'),o.name));   // heard, but not recognised
+    return patMatch(dVal(era,c,'origin'),O[cl.v].name)}
   if(cl.type==='quarters') return (dVal(era,c,'first')===TORN&&dVal(era,c,'sur')===TORN)||x.quarters===cl.v;   // a torn name can't be found in the register
   if(cl.type==='house') return patMatch(dVal(era,c,'sur'),cl.v);
   if(cl.type==='name') return patMatch(dVal(era,c,'first'),era.chars[cl.v].first);
@@ -3768,11 +3772,11 @@ function genEra(key,idx,run){
   const rec={role:chars.map((c,i)=>hideR?!hideR.has(i):(c.fam==='head'||!R.chance(pR))),origin:chars.map(()=>!R.chance(pO))};
   // where the register and the traveller's map came from, for the era intro: relics first, then one lucky find (35%)
   // that gives whichever of the two isn't already guaranteed
-  let quartersSrc=has('wax')?'wax':has('carto')?'carto':wax?'wax':null,mapSrc=has('nav')?'nav':null;
-  if(R.chance(.35)){const opts=[!quartersSrc&&'q',!mapSrc&&'m'].filter(Boolean);if(opts.length){if(R.pick(opts)==='q') quartersSrc='luck';else mapSrc='luck'}}
+  let quartersSrc=has('wax')?'wax':has('carto')?'carto':wax?'wax':null,mapSrc=has('nav')?'nav':null,transSrc=has('trans')?'trans':null;
+  if(R.chance(.35)){const opts=[!quartersSrc&&'q',!mapSrc&&'m',!transSrc&&'t'].filter(Boolean);if(opts.length){const o=R.pick(opts);if(o==='q') quartersSrc='luck';else if(o==='m') mapSrc='luck';else transSrc='luck'}}
   const quartersDoc=!!quartersSrc;
   const f2c=R.shuffle([...Array(n).keys()]);
-  const era={id:Math.random().toString(36).slice(2,9),key,idx,n,chars,f2c,rec,quartersDoc,quartersSrc,mapSrc,kin,gambler,gOrder:R.shuffle([...Array(n).keys()])};
+  const era={id:Math.random().toString(36).slice(2,9),key,idx,n,chars,f2c,rec,quartersDoc,quartersSrc,mapSrc,transSrc,kin,gambler,gOrder:R.shuffle([...Array(n).keys()])};
   // who survives: survivors get an escape memory somewhere in the timeline
   const all=R.shuffle([...Array(n).keys()]),nSurv=R.int(...by([2,3],[3,5],[4,7]));
   const survivors=all.slice(0,nSurv),dying=all.slice(nSurv);
@@ -3798,6 +3802,8 @@ function genEra(key,idx,run){
     return {victim:f,killer,cause:cause.id,place:placeFor(E,key,cause.id),present,voices:[],tags:[],reach:[]};
   });
   Object.assign(era,{order,pos,scenes,deathCause,killerOf,survivors});
+  // without a translation, about half the people from homelands with their own language speak it unrecognised
+  era.muted=transSrc?null:[...Array(n).keys()].map(f=>!!E.origins[chars[f2c[f]].origin].L&&R.chance(MUTE_RATE));
   // tear the manifest, then build clues; if the tearing left two entries that nothing could ever separate, tear it again
   let clues;
   for(let t=0;t<7;t++){
@@ -3829,7 +3835,7 @@ function genEra(key,idx,run){
       s.voices.push({sp:S,to:T,text,react});if(S!==s.victim) s.reach.push(S);
     } else {
       const s=scenes[R.pick(withF(cl.f))],c=chars[f2c[cl.f]];
-      if(cl.type==='origin'){const o=E.origins[cl.v],fresh=E.say.filter(t=>!s.voices.some(v=>v.text===t));s.voices.push({sp:cl.f,lang:o.L?`in ${o.L}`:`with ${o.A}`,text:R.pick(fresh.length?fresh:E.say),react:false})}
+      if(cl.type==='origin'){const o=E.origins[cl.v],fresh=E.say.filter(t=>!s.voices.some(v=>v.text===t));s.voices.push({sp:cl.f,lang:o.L?`in ${langTag(era,cl.f,o.L)}`:`with ${o.A}`,text:R.pick(fresh.length?fresh:E.say),react:false})}
       else if(cl.type==='quarters') s.tags.push({f:cl.f,kind:'key',label:`key: ${cl.v}`});
       else if(cl.type==='house') s.tags.push({f:cl.f,kind:'crest',label:E.crest.replace('{S}',cl.v),sur:cl.v});
       else if(cl.type==='role') s.tags.push({f:cl.f,kind:'role',label:roleOf(E,cl.v).tell});
@@ -4028,7 +4034,7 @@ function extraDetail(era,E,s,keyOnly){
   const pool=R.shuffle(s.present.slice());
   for(const f of pool){
     const c=era.chars[era.f2c[f]],o=E.origins[c.origin],opts=[];
-    if(!keyOnly) opts.push(o.L?R.pick([`{F${f}} is muttering under their breath in ${o.L}.`,`{F${f}} whispers a prayer in ${o.L}.`]):R.pick([`{F${f}} speaks with ${o.A}.`,`{F${f}}’s few words carry ${o.A}.`]));
+    if(!keyOnly) opts.push(o.L?R.pick([`{F${f}} is muttering under their breath in ${langTag(era,f,o.L)}.`,`{F${f}} whispers a prayer in ${langTag(era,f,o.L)}.`]):R.pick([`{F${f}} speaks with ${o.A}.`,`{F${f}}’s few words carry ${o.A}.`]));
     if(era.quartersDoc) opts.push(`{F${f}} carries a key tagged “${c.quarters}”.`);
     const fresh=opts.filter(t=>!(s.extra||[]).some(x=>x.t===t));
     if(fresh.length) return R.pick(fresh);
@@ -4073,6 +4079,7 @@ function applyReward(id){
   if(id==='tally'){const cnt={};for(let f=0;f<era.n;f++){const g=causeOf(E,era.deathCause[f]).g;cnt[g]=(cnt[g]||0)+1}era.findings.push('Tally Sheet: '+Object.entries(cnt).sort((a,b)=>b[1]-a[1]).map(([g,n])=>`${g==='Alive'?'Survived':g} ×${n}`).join(', ')+'.')}
   if(id==='blind'&&now) run.charges.glimpse=(run.charges.glimpse||0)+1;
   if(id==='wax'&&era&&now&&applyWaxNow(era,E)) toast('The Wax Seal: the quarters register is in the Manifest, and keys turn up in memories.');
+  if(id==='trans'&&era&&!era.transSrc){era.transSrc='trans';toast('The Translator: every language in the memories is named now.')}
   if(id==='nav'&&era&&!era.mapSrc){era.mapSrc='nav';toast('The Navigator: tap a place a survivor mentions in a memory to see it on the map.')}
 }
 function takeReward(id){
@@ -4254,8 +4261,12 @@ function cineView(){
 const app=document.getElementById('app');
 const PIN='<svg class="dpin" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22s7-7.1 7-12.2A7 7 0 0 0 5 9.8C5 14.9 12 22 12 22z" fill="currentColor"/><circle cx="12" cy="9.6" r="2.6" fill="#1b1812"/></svg>';
 const mapOn=era=>!!era&&(!('mapSrc' in era)||!!era.mapSrc);
-const destLinks=h=>!mapOn(S.era)?noLinks(h):h.replace(/\[\[D(\d+)\]\]([\s\S]*?)\[\[\/D\]\]/g,(x,i,t)=>`<span class="dlink" role="button" tabindex="0" data-act="map" data-d="${i}" title="Show on a map">${t}${PIN}</span>`);
-const noLinks=t=>t.replace(/\[\[\/?D\d*\]\]/g,'');
+const destLinks=h=>!mapOn(S.era)?noLinks(h):unL(h).replace(/\[\[D(\d+)\]\]([\s\S]*?)\[\[\/D\]\]/g,(x,i,t)=>`<span class="dlink" role="button" tabindex="0" data-act="map" data-d="${i}" title="Show on a map">${t}${PIN}</span>`);
+const MUTE_RATE=.5,MUTE_TXT='a language you don’t recognise';
+const langTag=(era,f,L)=>era.muted&&era.muted[f]?`[[L]]${L}[[/L]]`:L;
+const langOn=era=>!era||!era.muted||!!era.transSrc;
+const unL=t=>t.replace(/\[\[L\]\]([\s\S]*?)\[\[\/L\]\]/g,(x,l)=>langOn(S.era)?l:MUTE_TXT);
+const noLinks=t=>unL(t.replace(/\[\[\/?D\d*\]\]/g,''));
 const fillTokens=t=>destLinks(esc(t).replace(/\{F(\d+)\}/g,(x,f)=>chip(+f)));
 function guessName(f){const a=S.era.assign[f];return a.c!=null?dispName(S.era,a.c):''}
 function labelText(f){const era=S.era;if(era.sealed[f]) return charOfFace(f).name;const g=guessName(f);return `#${f+1}`+(g?` (${g})`:'')}
@@ -4321,9 +4332,12 @@ function registerLine(era){
   if(era.quartersDoc){const src=era.quartersSrc||'luck';
     const head={luck:'A stroke of luck!',wax:'Your Wax Seal holds.',carto:'Your Cartographer’s Kit delivers.'}[src];
     const body={luck:'The quarters register survived the night.',wax:'The bundle of letters is the quarters register.',carto:'The quarters register is laid out before you.'}[src];
-    out.push(`<div class="reglucky${src==='luck'?' luck':''}" role="note"><span class="regkey">${key}</span><div><b>${head}</b> ${body}<small>Keys found on the dead show where they slept, and rooms hint at jobs. See it in the Manifest.</small></div></div>`)}
+    out.push(`<div class="reglucky${src==='luck'?' luck':''}" role="note"><span class="regkey">${key}</span><span class="regname">${src==='luck'?'Lucky find: ':''}Quarters register</span><div><b>${head}</b> ${body}<small>Keys found on the dead show where they slept, and rooms hint at jobs. See it in the Manifest.</small></div></div>`)}
   if(era.mapSrc){const luck=era.mapSrc==='luck';
-    out.push(`<div class="reglucky${luck?' luck':''}" role="note"><span class="regkey">${mapI}</span><div><b>${luck?'A stroke of luck!':'Your Navigator knows the way.'}</b> ${luck?'A traveller’s map survived the night.':'The traveller’s map is yours.'}<small>Tap a place a survivor mentions in a memory to see it on the map.</small></div></div>`)}
+    out.push(`<div class="reglucky${luck?' luck':''}" role="note"><span class="regkey">${mapI}</span><span class="regname">${luck?'Lucky find: traveller’s map':'Traveller’s map'}</span><div><b>${luck?'A stroke of luck!':'Your Navigator knows the way.'}</b> ${luck?'A traveller’s map survived the night.':'The traveller’s map is yours.'}<small>Tap a place a survivor mentions in a memory to see it on the map.</small></div></div>`)}
+  if(era.transSrc){const luck=era.transSrc==='luck';
+    const bookI=`<svg viewBox="0 0 24 24" width="30" height="30" aria-hidden="true"><path d="M4 5.5C4 4.7 4.7 4 5.5 4H11v15H5.5A1.5 1.5 0 0 1 4 17.5zM20 5.5c0-.8-.7-1.5-1.5-1.5H13v15h5.5c.8 0 1.5-.7 1.5-1.5z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M6.5 8h2.5M6.5 11h2.5M15 8h2.5M15 11h2.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>`;
+    out.push(`<div class="reglucky${luck?' luck':''}" role="note"><span class="regkey">${bookI}</span><span class="regname">${luck?'Lucky find: phrasebook':'Translator'}</span><div><b>${luck?'A stroke of luck!':'Your Translator listens.'}</b> ${luck?'A traveller’s phrasebook survived the night.':'Every tongue is understood.'}<small>Every language spoken in the memories can be named. Without it, some voices go unrecognised.</small></div></div>`)}
   return out.length>1?`<div class="regtwo">${out.join('')}</div>`:out.join('');   // both: compact
 }
 function introScreen(){
@@ -4518,8 +4532,8 @@ function sheetView(){
   return h+`</div></div>`;
 }
 function voiceLabel(v,era){
-  if(v.sp==null) return 'An unseen voice'+(v.lang?`, ${v.lang}`:'');
-  const c=era.chars[era.f2c[v.sp]];return (c.sex==='m'?'A man':'A woman')+(v.lang?`, ${v.lang}`:'');
+  if(v.sp==null) return 'An unseen voice'+(v.lang?`, ${unL(v.lang)}`:'');
+  const c=era.chars[era.f2c[v.sp]];return (c.sex==='m'?'A man':'A woman')+(v.lang?`, ${unL(v.lang)}`:'');
 }
 function memoryView(){
   const era=S.era,E=E_(),m=ui.mem,s=era.scenes[m.i],tab=ui.memTab||'story';
@@ -4613,7 +4627,7 @@ function modalView(){
   if(m.kind==='rules') return `<div class="scrim center-modal" data-act="closemodal"><div class="sheet rulesm"><h2 style="font-size:1.6rem">How to play</h2><div class="rules" data-page="blocks">
     <p class="rl">In each disaster a crowd was caught up: twelve people in the first era, twenty in the second, thirty in the third. Most died; a few were never found and survived. Tap a portrait to relive that person’s last moment as a written scene. Nothing is stated outright: read the sounds, wounds and voices, and watch for details that are there to mislead you.</p>
     <p class="rl">For each person, work out their name from the manifest and their fate: how they died, and who killed them if someone did, or where they escaped to if they lived.</p>
-    <p class="rl">How someone dresses hints at their station and role. Language and accent point to a homeland. Keys match the quarters register. Family members share a surname. Sometimes a name is called out. When you have a traveller’s map, the places survivors mention can be tapped to see where they were headed.</p>
+    <p class="rl">How someone dresses hints at their station and role. Language and accent point to a homeland (without a phrasebook or the Translator, some languages go unrecognised). Keys match the quarters register. Family members share a surname. Sometimes a name is called out. When you have a traveller’s map, the places survivors mention can be tapped to see where they were headed.</p>
     <p class="rl">The manifest is damaged: some names or homelands are torn away, and each ? is a letter you can’t read. Voices, monograms, family ties and how people are treated all help you match a face to a damaged entry.</p>
     <p class="rl">Consult the Ledger to test your answers. If at least two open fates are fully right, two of them are sealed; press again to seal more. If not, you lose a heart.</p>
     <p class="rl">Each successful consultation seals two fates, and every second one earns a relic pick: three relics to choose from. Every era also begins with a relic pick, and sealing an era’s last fates earns its own relic choice.</p>
