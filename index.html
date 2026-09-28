@@ -9,7 +9,7 @@
 /* Live site: the page itself can be cached for a while after a publish, while maps.js etc. come fresh, so an old page
    could show new data. version.txt holds the build stamp; if it differs, load the page again under a new URL.
    BUILD stays 'dev' in the project; stamp_build.py writes the stamp into dist/index.html and dist/version.txt. */
-(function(){var BUILD='20260927235146';if(BUILD==='dev'||window!==window.top||!window.fetch||location.protocol==='file:') return;
+(function(){var BUILD='20260928000813';if(BUILD==='dev'||window!==window.top||!window.fetch||location.protocol==='file:') return;
   fetch('version.txt?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.ok?r.text():''}).then(function(v){
     v=(v||'').trim();if(!v||v===BUILD) return;
     try{var k='lh-build-'+v;if(sessionStorage.getItem(k)) return;sessionStorage.setItem(k,'1')}catch(e){return}
@@ -1496,13 +1496,13 @@ REWARDS.length=0;Object.keys(REW).forEach(k=>delete REW[k]);
   {id:'customs',name:'Customs Seal',rar:'c',kind:'charge',uses:1,tags:['x1','Homeland'],desc:'Restore one torn or smudged homeland on the manifest.'},
   // rare
   {id:'steady',name:'Steady Hand',rar:'r',kind:'charge',uses:1,expires:'era',tags:['x1','This era','Safety'],desc:'Your next failed consultation this era costs no heart. Lost when the era ends.'},
-  {id:'wax',name:'Wax Seal',rar:'r',kind:'relic',expires:'era',tags:['This era','Role'],desc:'This era, the quarters register: where everyone slept. Staff slept by their work, so a key hints at a job. Keys turn up in the memories.'},
+  {id:'wax',name:'Wax Seal',rar:'r',kind:'relic',tags:['Permanent','Role'],desc:'The quarters register, starting now and in every era after: where everyone slept. Staff slept by their work, so a key hints at a job.'},
   {id:'primer',name:'Interpreter’s Ear',rar:'r',kind:'relic',perEra:1,tags:['Permanent','1 per era','Homeland'],desc:'Once per era, place a chosen person’s accent: learn their homeland.'},
   {id:'satchel',name:'Physician’s Satchel',rar:'r',kind:'charge',uses:2,tags:['x2','Death'],desc:'Twice, learn the broad cause of a chosen person’s death: a blade, something heavy, a fall, water or cold…'},
   {id:'lens',name:'Magnifying Lens',rar:'r',kind:'charge',uses:2,tags:['x2','Clue'],desc:'Twice, choose someone’s memory and uncover one extra hidden detail in it.'},
   {id:'tattoo',name:'Tattooist’s Eye',rar:'r',kind:'relic',perEra:2,tags:['Permanent','2 per era','Relationship'],desc:'Twice per era, learn whether a chosen person has family among the dead.'},
-  {id:'nav',name:'Navigator',rar:'r',kind:'relic',expires:'era',tags:['This era','Death'],desc:'This era, the traveller’s map: tap a place a survivor mentions to see where they were headed.'},
-  {id:'trans',name:'Translator',rar:'r',kind:'relic',expires:'era',tags:['This era','Homeland'],desc:'This era, every language spoken in the memories is named. Without it, some voices speak a language you don’t recognise.'},
+  {id:'nav',name:'Navigator',rar:'r',kind:'relic',tags:['Permanent','Death'],desc:'The traveller’s map, starting now and in every era after: tap a place a survivor mentions to see where they were headed.'},
+  {id:'trans',name:'Translator',rar:'r',kind:'relic',tags:['Permanent','Homeland'],desc:'Every language spoken in the memories is named, starting now and in every era after. Without it, some voices speak a language you don’t recognise.'},
   {id:'herald',name:'Seal of the House',rar:'r',kind:'relic',perEra:1,tags:['Permanent','1 per era','Name'],desc:'Once per era, choose a person and learn their surname.'},
   {id:'interro',name:'Interrogator',rar:'r',kind:'relic',perEra:1,tags:['Permanent','1 per era','Name'],desc:'Once per era, ask whether a person bears the name you gave them.'},
   {id:'paste',name:'Archivist’s Paste',rar:'r',kind:'charge',uses:1,tags:['x1','Name'],desc:'Paste a torn page back together: restore one damaged surname in full.'},
@@ -3772,8 +3772,8 @@ function genEra(key,idx,run){
   const rec={role:chars.map((c,i)=>hideR?!hideR.has(i):(c.fam==='head'||!R.chance(pR))),origin:chars.map(()=>!R.chance(pO))};
   // where the register and the traveller's map came from, for the era intro: relics first, then one lucky find (35%)
   // that gives whichever of the two isn't already guaranteed
-  let quartersSrc=null,mapSrc=null,transSrc=null;
-  if(R.chance(LUCK_FIND)){const o=R.pick(['q','m','t']);if(o==='q') quartersSrc='luck';else if(o==='m') mapSrc='luck';else transSrc='luck'}
+  let quartersSrc=has('wax')?'wax':null,mapSrc=has('nav')?'nav':null,transSrc=has('trans')?'trans':null;
+  if(R.chance(LUCK_FIND)){const opts=[!quartersSrc&&'q',!mapSrc&&'m',!transSrc&&'t'].filter(Boolean);if(opts.length){const o=R.pick(opts);if(o==='q') quartersSrc='luck';else if(o==='m') mapSrc='luck';else transSrc='luck'}}
   const quartersDoc=!!quartersSrc;
   const f2c=R.shuffle([...Array(n).keys()]);
   const era={id:Math.random().toString(36).slice(2,9),key,idx,n,chars,f2c,rec,quartersDoc,quartersSrc,mapSrc,transSrc,kin,gambler,gOrder:R.shuffle([...Array(n).keys()])};
@@ -4011,7 +4011,7 @@ function makeOffer(opt={}){
   const run=S.run,cnt=S.era&&S.era.gambler?4:3;   // Gambler's Coin: four choices for every offer in that era
   const legOdds=run.relics.includes('blind')?.10:.05;
   const usable=r=>(r.kind==='charge'&&!['steady','slate'].includes(r.id))||!!r.perEra;   // relics with a Use button
-  const avail=REWARDS.filter(r=>!(run.tutorial&&r.id==='blind')&&!(run.tutorial&&opt.start&&!usable(r))&&!(r.kind==='relic'&&run.relics.includes(r.id))&&!(opt.noInstant&&(r.kind==='instant'||r.expires==='era'))&&!(S.era&&((r.id==='wax'&&S.era.quartersDoc)||(r.id==='nav'&&mapOn(S.era))||(r.id==='trans'&&langOn(S.era))))),out=[];let g=0;
+  const avail=REWARDS.filter(r=>!(run.tutorial&&r.id==='blind')&&!(run.tutorial&&opt.start&&!usable(r))&&!(r.kind==='relic'&&run.relics.includes(r.id))&&!(opt.noInstant&&(r.kind==='instant'||r.expires==='era'))),out=[];let g=0;
   while(out.length<cnt&&g++<400){const roll=Math.random(),rar=roll<legOdds?'l':roll<legOdds+.25?'r':'c';const pool=avail.filter(r=>r.rar===rar&&!out.includes(r.id));if(pool.length) out.push(R.pick(pool).id)}
   const lasting=id=>['relic','next','geneal'].includes(REW[id].kind);
   if(!out.some(lasting)&&!(run.tutorial&&opt.start)){const pool=avail.filter(r=>lasting(r.id)&&r.rar!=='l'&&!out.includes(r.id));if(pool.length) out[R.int(0,out.length-1)]=R.pick(pool).id}
@@ -4337,7 +4337,7 @@ function registerLine(era){
     out.push(`<div class="reglucky${luck?' luck':''}" role="note"><span class="regkey">${mapI}</span><span class="regname">${luck?'Lucky find: traveller’s map':'Traveller’s map'}</span><div><b>${luck?'A stroke of luck!':'Your Navigator knows the way.'}</b> ${luck?'A traveller’s map survived the night.':'The traveller’s map is yours.'}<small>Tap a place a survivor mentions in a memory to see it on the map.</small></div></div>`)}
   if(era.transSrc){const luck=era.transSrc==='luck';
     const bookI=`<svg viewBox="0 0 24 24" width="30" height="30" aria-hidden="true"><path d="M4 5.5C4 4.7 4.7 4 5.5 4H11v15H5.5A1.5 1.5 0 0 1 4 17.5zM20 5.5c0-.8-.7-1.5-1.5-1.5H13v15h5.5c.8 0 1.5-.7 1.5-1.5z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M6.5 8h2.5M6.5 11h2.5M15 8h2.5M15 11h2.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>`;
-    out.push(`<div class="reglucky${luck?' luck':''}" role="note"><span class="regkey">${bookI}</span><span class="regname">${luck?'Lucky find: phrasebook':'Translator'}</span><div><b>${luck?'A stroke of luck!':'Your Translator listens.'}</b> ${luck?'A traveller’s phrasebook survived the night.':'Every tongue is understood.'}<small>Every language spoken in the memories can be named. Without it, some voices go unrecognised.</small></div></div>`)}
+    out.push(`<div class="reglucky${luck?' luck':''}" role="note"><span class="regkey">${bookI}</span><span class="regname">${luck?'Lucky find: language phrasebook':'Translator'}</span><div><b>${luck?'A stroke of luck!':'Your Translator listens.'}</b> ${luck?'A language phrasebook survived the night.':'Every tongue is understood.'}<small>Every language spoken in the memories can be named. Without it, some voices go unrecognised.</small></div></div>`)}
   return out.length>1?`<div class="regtwo">${out.join('')}</div>`:out.join('');   // both: compact
 }
 function introScreen(){
@@ -4627,7 +4627,7 @@ function modalView(){
   if(m.kind==='rules') return `<div class="scrim center-modal" data-act="closemodal"><div class="sheet rulesm"><h2 style="font-size:1.6rem">How to play</h2><div class="rules" data-page="blocks">
     <p class="rl">In each disaster a crowd was caught up: twelve people in the first era, twenty in the second, thirty in the third. Most died; a few were never found and survived. Tap a portrait to relive that person’s last moment as a written scene. Nothing is stated outright: read the sounds, wounds and voices, and watch for details that are there to mislead you.</p>
     <p class="rl">For each person, work out their name from the manifest and their fate: how they died, and who killed them if someone did, or where they escaped to if they lived.</p>
-    <p class="rl">How someone dresses hints at their station and role. Language and accent point to a homeland (without a phrasebook or the Translator, some languages go unrecognised). Keys match the quarters register. Family members share a surname. Sometimes a name is called out. When you have a traveller’s map, the places survivors mention can be tapped to see where they were headed.</p>
+    <p class="rl">How someone dresses hints at their station and role. Language and accent point to a homeland (without a language phrasebook or the Translator, some languages go unrecognised). Keys match the quarters register. Family members share a surname. Sometimes a name is called out. When you have a traveller’s map, the places survivors mention can be tapped to see where they were headed.</p>
     <p class="rl">The manifest is damaged: some names or homelands are torn away, and each ? is a letter you can’t read. Voices, monograms, family ties and how people are treated all help you match a face to a damaged entry.</p>
     <p class="rl">Consult the Ledger to test your answers. If at least two open fates are fully right, two of them are sealed; press again to seal more. If not, you lose a heart.</p>
     <p class="rl">Each successful consultation seals two fates, and every second one earns a relic pick: three relics to choose from. Every era also begins with a relic pick, and sealing an era’s last fates earns its own relic choice.</p>
