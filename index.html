@@ -9,7 +9,7 @@
 /* Live site: the page itself can be cached for a while after a publish, while maps.js etc. come fresh, so an old page
    could show new data. version.txt holds the build stamp; if it differs, load the page again under a new URL.
    BUILD stays 'dev' in the project; stamp_build.py writes the stamp into dist/index.html and dist/version.txt. */
-(function(){var BUILD='20260928132524';if(BUILD==='dev'||window!==window.top||!window.fetch||location.protocol==='file:') return;
+(function(){var BUILD='20260928133916';if(BUILD==='dev'||window!==window.top||!window.fetch||location.protocol==='file:') return;
   fetch('version.txt?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.ok?r.text():''}).then(function(v){
     v=(v||'').trim();if(!v||v===BUILD) return;
     try{var k='lh-build-'+v;if(sessionStorage.getItem(k)) return;sessionStorage.setItem(k,'1')}catch(e){return}
@@ -1713,7 +1713,7 @@ const PLACE_AMB={
     'the kitchen':['Pots bubble on the stove, unattended.','Garlic and fish hang from the rafters.','Amphorae lean against the wall.'],
     'the villa steps':['People jostle down toward the shore.','Hot stones clatter down the steps.','The sky is black with ash, whatever the hour.'],
     'the beach':['Waves hiss on the dark sand.','Boats lie stranded as the sea pulls back.','The mountain glows red across the bay.']}};
-function placeAmb(era,place){let t=(PLACE_AMB[era.key]||{})[String(place).toLowerCase()];const sc=era.scen&&scenOf(era.key,era.scen);if(t&&sc&&sc.place) t=t.filter(x=>!sc.place.test(x));return t&&t.length?R.pick(t):null}   // lines about a disaster that didn't happen are left out
+function placeAmb(era,place){const sc=era.scen&&scenOf(era.key,era.scen),pk=String(place).toLowerCase();let t=(sc&&sc.placeAmb&&sc.placeAmb[pk])||(PLACE_AMB[era.key]||{})[pk];if(t&&sc&&sc.place) t=t.filter(x=>!sc.place.test(x));return t&&t.length?R.pick(t):null}   // lines about a disaster that didn't happen are left out
 /* A present person is sometimes called by name and turns: true information, so it can only make an era easier. */
 function nameCall(era,f,X,after,V){
   const c=era.chars[era.f2c[f]],parts=c.name.split(' '),sur=c.sur||parts[parts.length-1],first=parts[0],nm=R.chance(.25)?first:sur;
@@ -1939,7 +1939,7 @@ const CH_MOCK=['{A} snorts to {B}:','{A} rolls their eyes at {B}:','{A} says to 
 const CH_ALONE=['{A} mutters to nobody in particular:','{A} says, half to themself:'];
 const CH_SEEN=['“I saw {N} earlier, {C}.”','“{N} went by a moment ago, {C}.”','“If you’re looking for {N}: {S}”','“You can’t miss {N}. {S}”','“{N}? The one {C}.”','“I’d know {N} anywhere. {S}”'];
 const CH_NICE=['“Did you see {N} tonight? {S} Very fine.”','“{N} looked a picture, {C}.”','“Say what you like about {N}, {P} knows how to dress. {S}”','“I’ll admit it: {N} looked well tonight, {C}.”'];
-const CH_RUDE=['“Did you see {N}? {S} On a night like this.”','“{N}, {C}. Who told {O} that suited {O}?”','“There goes {N} again, {C}. Honestly.”','“{N} thinks {P} cuts a fine figure, {C}.”'];
+const CH_RUDE=['“Did you see {N}? {S} At a time like this.”','“{N}, {C}. Who told {O} that suited {O}?”','“There goes {N} again, {C}. Honestly.”','“{N} thinks {P} cuts a fine figure, {C}.”'];
 const CH_KILLER=['“I saw who went after {N}. Someone {C}.”','“Whoever did for {N}, I saw them: someone {C}. I’d swear to it.”','“I saw the one who killed {N}: someone {C}.”','“It was someone {C} who went for {N}. I saw it.”'];
 const CH_RUMOUR=['“Have you heard about {N}? They say it was {W}.”','“Poor {N}. {W}, they’re saying.”','“They found {N}. It was {W}, I heard.”'];
 const CH_ANGRY=['“Don’t you turn your back on me, {N}!”','“You’ve done nothing but get in the way all night, {N}.”','“I’ll not take orders from you, {N}.”','“Keep your hands to yourself, {N}.”','“You always were a coward, {N}.”','“Don’t you dare, {N}. Not tonight.”'];
@@ -1983,7 +1983,7 @@ function chatterLines(s,E,era,X){
       lines.push(`${R.pick(k==='angry'?['{A} rounds on {B}:','{A} snaps at {B}:','{A} jabs a finger at {B}:']:['{A} says to {B}:','{A} touches {B}’s arm:','{A} calls to {B}:']).replace('{A}',X(a)).replace('{B}',X(b))} ${R.pick(k==='angry'?CH_ANGRY:CH_CASUAL).replace('{N}',c.first)}`);
     }
   }
-  return lines;
+  return era.scen==='day'?lines.map(t=>t.replace(/tonight/g,'today')):lines;   // the daytime scenario
 }
 /* Eye Witness relic: what a named person was wearing */
 function witnessLine(era,E,f){const c=era.chars[era.f2c[f]],fs=lookPick(era,E,c,3);return fs?chSent(fs,c):null}
@@ -2030,7 +2030,7 @@ const ESC_END=['Then the moment holds, and everything is still.','The sound stop
 const destLink=(era,dest,t)=>`[[D${Object.keys(DEST_HINTS[era.key]).indexOf(dest)}]]${t}[[/D]]`;
 function destHint(era,f,forceObj){
   const E=ERAS[era.key],dest=causeOf(E,era.deathCause[f]).alive,H=DEST_HINTS[era.key][dest],X=`{F${f}}`,L=t=>destLink(era,dest,t);
-  if(!forceObj&&R.chance(.55)) return R.pick([`${X}: “${L(R.pick(H.say))}”`,`${X} whispers: “${L(R.pick(H.say))}”`]);
+  if(!forceObj&&R.chance(.55)) return R.pick([`${X}: “${L(R.pick(destSays(era,dest)))}”`,`${X} whispers: “${L(R.pick(destSays(era,dest)))}”`]);
   return R.pick([`${X} clutches ${L(R.pick(H.obj))}.`,`Tucked into ${X}’s belt is ${L(R.pick(H.obj))}.`,`${L(R.pick(H.obj).replace(/^./,x=>x.toUpperCase()))} falls from ${X}’s coat.`]);
 }
 function buildEscapeStory(s,E,era){
@@ -2047,7 +2047,7 @@ function buildEscapeStory(s,E,era){
   if(people.length) groups.push(R.shuffle(people));
   const voices=s.voices.map(v=>{const who=v.sp==null?'A voice nobody can place':X(v.sp);if(v.lang) return `${who} cries out ${v.lang}: “${v.text}”`;if(v.to!=null) return `${who} calls to ${X(v.to)}: “${v.text}”`;return `${who}: “${v.text}”`});
   const hint=destHint(era,s.victim);
-  if(others.length&&R.chance(.3)){const o=R.pick(others);voices.push(`${X(o)} calls after ${V}: “${destLink(era,s.dest,R.pick(H.say))}”`)}else voices.push(hint);
+  if(others.length&&R.chance(.3)){const o=R.pick(others);voices.push(`${X(o)} calls after ${V}: “${destLink(era,s.dest,R.pick(destSays(era,s.dest)))}”`)}else voices.push(hint);
   groups.push(R.shuffle(voices));
   const esc=E.escape||ESCAPE[era.key];
   s.impact=groups.flat().length;   // the near-miss: same impact effect as a death, so it gives nothing away
@@ -2440,7 +2440,7 @@ const SCENARIOS={
       ambient:['A harp plays in the great hall, then falters.','Laughter rises and dies away.','A dog barks at the gate.','Rain drums on the shutters.','A goblet rolls across the floor.','The fire in the hearth spits and crackles.','Somebody is singing, badly, far off.'],
       say:['Help me! For God’s sake, help me!','Mother of God, not like this…','Get back! Get away from me!','Murder! Murder in the hall!','Bar the doors!'],
       threat:['Stay down.','You should never have come to this feast.','For the new lord of Varrow.','No one will ever know.'],
-      place:/siege|enemy|campfires|each blow|firelight|smoke/i,drop:['shot_cannon'],
+      place:/siege|enemy|campfires|each blow|firelight|smoke/i,drop:['shot_cannon'],clock:{date:'Midsummer Eve, 23 June 1347',start:20*60+30,end:28*60+50,bunch:1},
       escape:{snd:['Hooves clatter hard on the cobbles of the postern.','A door slams, and running feet.','A knife hisses past and thuds into timber.','A shutter bangs open on the dark.'],
         ev:['{V} drops from the wall into the moat, sinks under, then comes up spluttering and claws onto the far bank.','{V} is thrown from a bolting horse, lies still in the mud a long moment, then gets up bloody and staggering toward the gate.','A blade tears through {V}’s sleeve; {V} clutches the arm, grits teeth, and limps out through the postern.','{V} slides down the knotted rope too fast, lands hard, and crawls off into the dark on hands and knees.','{V} tumbles down the kitchen stair, lies winded among the pots, then limps out through the scullery door.']}}],
   manor:[{id:'fire',w:2},
@@ -2466,7 +2466,18 @@ const SCENARIOS={
     {id:'storm',w:1,title:'The Aurelia and the Hurricane',intro:'A hurricane caught the Aurelia four days out. By midnight her rudder was gone and her holds were flooding. The manifest lists passengers and crew. The sea kept the rest.',
       ambient:['Wind shrieks in the rigging.','A wave crashes over the bow.','The whole ship lurches and groans.','Rain lashes the portholes.','Lifeboat davits squeal.','Thunder cracks overhead.'],
       say:['Help! Help us!','God help us, the water’s coming in!','Get away from me!','Let me into the boat!','Hold on to something!'],
-      place:/stars are very bright/i}],
+      place:/stars are very bright/i},
+    {id:'gala',w:1,title:'Gala Night aboard the RMS Aurelia',intro:'The Aurelia never struck anything. On the last night of the crossing there was a gala in the saloon, dancing on the promenade and cards in the smoking room. By the time she docked, the dead were laid out in the hold.',
+      clock:{date:'The night of 14 April 1924',start:20*60+30,end:28*60+10,bunch:1},
+      ambient:['A jazz band plays in the saloon.','Glasses clink at the captain’s table.','Laughter spills out of the smoking room.','The engines thrum steadily below.','A steward strikes the dinner gong.','Couples dance on the promenade under the stars.','Somewhere a gramophone crackles into life.'],
+      say:['Help! Help us!','Somebody fetch the ship’s doctor!','Get away from me!','Murder! Call the captain!','Where is my wife?'],
+      threat:['You know what you did.','Nobody leaves this room.','That seat is mine.','It’ll look like an accident.'],
+      place:/water laps|water rises|shoe floats|seawater|black water|soaked|tilting|slides off|slide toward|sea looks very close|rockets|full astern|spins loose|with the list|ropes whine|dome overhead creaks/i,
+      destSay:{'Nova Scotia':['Halifax is our next port of call. I’m getting off there.','Nova Scotia. Nobody will think to look for me in Halifax.','The mail boat leaves Halifax the day we dock.'],
+        'Long Island':['My family’s summer house on the Sound. Nobody will look there.','The beaches past Montauk Point. That’s where I’m going.','The first train out to the Hamptons, the moment we dock.'],
+        'Boston':['Beacon Hill. My aunt will hide me.','Into the harbour where they dumped the tea, and then I vanish.','The Boston train, the minute the gangway’s down.']},
+      escape:{snd:['A door slams below decks.','Running feet on the promenade.','A shot cracks along the corridor.','A wave breaks over the rail with a roar.'],
+        ev:['{V} is shoved against the rail, nearly goes over, then hauls back aboard and runs for the stairs.','{V} falls down a companionway, lies stunned at the bottom, then limps away clutching one wrist.','A blade slashes {V}’s sleeve; {V} clutches the arm and bolts through the galley.','{V} hides in a lifeboat under the canvas, bleeding and shaking, until the footsteps pass.','{V} slips on the wet deck, cracks against a bollard, and crawls away into the dark.']}}],
   villa:[{id:'eruption',w:2},
     {id:'quake',w:1,title:'The Great Earthquake at Herculaneum',intro:'The ground at Herculaneum shook at nightfall and would not stop. Walls came down on a seaside villa, and then the sea came in. None of the household reached safety.',
       ambient:['The ground heaves, and the lamps swing.','Plaster rains from the ceiling.','Somewhere a wall collapses with a roar.','The sea draws back with a roar.','Dogs howl all across the town.','Roof tiles slide and shatter in the street.'],
@@ -2478,9 +2489,21 @@ const SCENARIOS={
       ambient:['Flutes and drums play in the street.','Someone laughs too loudly in the atrium.','Wine is poured, and poured again.','A dog barks at the gate.','Garlands hang from every doorway.','Waves break softly on the shore.'],
       say:['Help me! Gods, help me!','Juno protect us…','Get away from me!','Murder! Murder in the house!','Bar the door!'],
       threat:['The gold is mine now.','No one will miss you tonight.','For every year I served you.','Quiet. Quiet now.'],
-      place:/ash|lava|hot stones|mountain|tremor|sea pulls back|jostle/i,drop:['exploded'],
+      place:/ash|lava|hot stones|mountain|tremor|sea pulls back|jostle/i,drop:['exploded'],clock:{date:'The night of 17 December, 78 AD',start:18*60,end:26*60+30,bunch:1},
       escape:{snd:['Oars dip into the dark water.','Hooves on the coast road, going hard.','The sail of a small boat snaps full of wind.','A door bursts open on the street.'],
-        ev:['{V} is knocked down the villa steps, lies still at the bottom, then lurches up bleeding from the scalp and runs for the boats.','A blade opens {V}’s arm; {V} clutches it, and staggers out into the festival crowd.','{V} is thrown from a horse on the coast road, gets up bloody and staggering, and catches the bridle again.','{V} crawls out through the kitchen drain, filthy and shaking, and stumbles toward the water.','{V} clings to the stern of a boat as it pulls away, legs dragging in the surf.']}}]
+        ev:['{V} is knocked down the villa steps, lies still at the bottom, then lurches up bleeding from the scalp and runs for the boats.','A blade opens {V}’s arm; {V} clutches it, and staggers out into the festival crowd.','{V} is thrown from a horse on the coast road, gets up bloody and staggering, and catches the bridle again.','{V} crawls out through the kitchen drain, filthy and shaking, and stumbles toward the water.','{V} clings to the stern of a boat as it pulls away, legs dragging in the surf.']}},
+    {id:'day',w:1,title:'A Day in Herculaneum',intro:'The mountain slept. On a hot summer day the town went about its business: gladiators trained, athletes raced, the market sold fish and bread, and a seaside villa’s household cooked, bathed and quarrelled. By sunset none of them were alive.',
+      clock:{date:'A summer day, 79 AD',start:8*60+30,end:19*60+45,bunch:1},
+      places:['the Gladiator School','the Palaestra','the Market'],
+      placeAmb:{'the gladiator school':['Wooden swords clack against wicker shields.','A trainer bellows the count.','Sand sticks to sweat and blood.'],
+        'the palaestra':['Oiled athletes grapple in the sand.','A discus thuds into the turf.','Runners pound around the track to a roar.'],
+        'the market':['Stalls sell figs, fish and fresh bread.','Hawkers shout over each other.','A money-changer bites a coin.']},
+      ambient:['Cheers roll up from the palaestra.','A trainer barks orders at the gladiators.','Wooden swords clack in the practice yard.','The smell of fresh bread drifts from the bakery.','Cicadas buzz in the heat.','A vendor cries hot sausages for sale.','Slaves hurry past with amphorae of wine.','The crowd roars as the runners finish.'],
+      say:['Help me! Gods, help me!','Juno protect us…','Get away from me!','Murder! Call the watch!','Somebody fetch a physician!'],
+      threat:['The gold is mine now.','You’ll not win this one.','For every year I served you.','Quiet. Quiet now.'],
+      place:/ash|lava|hot stones|mountain|tremor|sea pulls back|jostle|lamplight|dark sand|little lamp/i,drop:['exploded'],add:['discus'],favor:{discus:.1},
+      escape:{snd:['Hooves on the coast road, going hard.','A door bursts open on the street.','The crowd roars and surges.','Oars dip into the bright water.'],
+        ev:['{V} is knocked down the villa steps, lies still at the bottom, then lurches up bleeding from the scalp and runs for the boats.','A blade opens {V}’s arm; {V} clutches it, and staggers out into the market crowd.','{V} is thrown from a horse on the coast road, gets up bloody and staggering, and catches the bridle again.','{V} is trampled in the crush at the games, drags up bloody, and limps away through the gate.','{V} clings to the stern of a boat as it pulls away, legs dragging in the surf.']}}]
 };
 const scenOf=(key,id)=>(SCENARIOS[key]||[]).find(x=>x.id===id)||null;
 function pickScenario(key){const L=SCENARIOS[key]||[];if(!L.length) return null;let r=Math.random()*L.reduce((a,x)=>a+x.w,0);for(const x of L){r-=x.w;if(r<0) return x}return L[0]}
@@ -2492,6 +2515,7 @@ function eraE(key,id){
   const O=Object.create(B);
   ['title','intro','ambient','say','threat'].forEach(f=>{if(sc[f]) O[f]=sc[f]});
   O.escape=sc.escape||null;O.scen=sc;
+  if(sc.places) O.places=B.places.concat(sc.places);
   O.causes=B.causes.map(c=>(sc.drop||[]).includes(c.id)?Object.assign({},c,{hidden:true}):(sc.add||[]).includes(c.id)?Object.assign({},c,{hidden:false}):c);
   return SCEN_E[k]=O;
 }
@@ -2503,8 +2527,15 @@ function eraE(key,id){
   BEAST_D.dragon=['a vast scaled wyrm','the dragon','a great red-scaled shape on leathery wings'];
   STORY.dragon={snd:['A roar like a furnace door opening, and a rush of wings.','Wingbeats, huge and slow, then a scream cut short.','A blast of heat, and something enormous lands on the stones.'],
     ev:['{V} lies scorched and torn, claw marks raked across the chest.','{V} is flung against the wall, burned and broken; {B} rises away into the dark.','Great talons have opened {V} from shoulder to hip.']};
+  const V=ERAS.villa,j=V.causes.findIndex(c=>c.alive);
+  V.causes.splice(j<0?V.causes.length:j,0,{id:'discus',g:'Bludgeoned',name:'Struck by a stray discus',verb:'was struck by a stray discus',fx:'blood',hidden:true});
+  STORY.discus={snd:['A whirring hum through the air, a crack, and the crowd goes quiet.','A cheer that turns into a scream.','Something heavy spins past, then a dull, final thud.'],
+    ev:['{V} lies on the sand, one side of the head crushed; a heavy bronze disc lies close by.','{V} is sprawled face down, the back of the skull caved in; a bronze disc has rolled a few feet away.','A bronze discus lies in the dust by {V}’s head, dented and bloody.']};
+  if(typeof CAUSE_PLACES!=='undefined') (CAUSE_PLACES.villa=CAUSE_PLACES.villa||{}).discus=['the Palaestra'];
   if(typeof CAUSE_PLACES!=='undefined') (CAUSE_PLACES.medieval=CAUSE_PLACES.medieval||{}).dragon=['the Ramparts','the Well Court','the Stables','the Gatehouse'];
 })();
+const eraClock=era=>{const sc=era&&era.scen&&scenOf(era.key,era.scen);return (sc&&sc.clock)||ERA_CLOCK[era.key]};
+const destSays=(era,dest)=>{const sc=era.scen&&scenOf(era.key,era.scen);return (sc&&sc.destSay&&sc.destSay[dest])||DEST_HINTS[era.key][dest].say};
 function placeFor(E,key,id){const ok=((CAUSE_PLACES[key]||{})[id]||[]).filter(pl=>E.places.includes(pl));return R.pick(ok.length?ok:E.places)}
 /* simpler country names and realistic names */
 const ORIGIN_FIX={
@@ -4601,7 +4632,7 @@ function registerLine(era){
 }
 function introScreen(){
   const era=S.era,E=E_(),run=S.run;
-  return `<div class="wrap screen intro-screen"><div class="ileft"><div class="kicker">Era ${run.idx+1} of ${ERA_COUNT}</div><h1>${esc(E.title)}</h1><p class="muted"><i>${esc(E.when)}</i></p>${ERA_CLOCK[era.key]?`<p class="idate">${esc(ERA_CLOCK[era.key].date)}</p>`:''}</div><div class="iright"><p>${esc(E.intro)}</p>
+  return `<div class="wrap screen intro-screen"><div class="ileft"><div class="kicker">Era ${run.idx+1} of ${ERA_COUNT}</div><h1>${esc(E.title)}</h1><p class="muted"><i>${esc(E.when)}</i></p>${eraClock(era)?`<p class="idate">${esc(eraClock(era).date)}</p>`:''}</div><div class="iright"><p>${esc(E.intro)}</p>
   ${registerLine(era)}
   <p>The Reliquary holds <b>${era.n} last moments</b>. The manifest lists ${era.n} names.${era.gambler?' The Gambler’s Coin has hidden half the roles on the manifest, and every relic offer this era has four choices.':''}</p>
   ${road()}<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:8px">${hearts()}<button class="btn primary" data-act="enter">Open the Reliquary</button></div></div></div>`;
@@ -4636,7 +4667,7 @@ const ERA_CLOCK={
 /* minutes for every scene, in timeline order; seeded by the era so the same era always gets the same times */
 function eraTimes(era){
   if(era.times&&era.times.length===era.scenes.length) return era.times;
-  const C=ERA_CLOCK[era.key]||ERA_CLOCK.manor,n=era.scenes.length,rnd=mulberry(hashStr('clock|'+era.id));
+  const C=eraClock(era)||ERA_CLOCK.manor,n=era.scenes.length,rnd=mulberry(hashStr('clock|'+era.id));
   const gaps=[...Array(n)].map(()=>-Math.log(1-rnd()*.999)+.15);   // uneven gaps: some deaths come quickly, some after a lull
   const tot=gaps.reduce((a,b)=>a+b,0);let acc=0;
   const span=C.end-C.start;let prev=-1;
@@ -4871,7 +4902,7 @@ function satchelView(){
 }
 function recordsView(){
   const run=S.run,era=S.era,E=E_();
-  let h=`<h2 class="section-h" style="margin-top:0">Where and when</h2><div class="note whenwhere"><b>${esc(E.title)}</b><br>${esc(E.when)}${ERA_CLOCK[era.key]?` · ${esc(ERA_CLOCK[era.key].date)}`:''}</div>`;
+  let h=`<h2 class="section-h" style="margin-top:0">Where and when</h2><div class="note whenwhere"><b>${esc(E.title)}</b><br>${esc(E.when)}${eraClock(era)?` · ${esc(eraClock(era).date)}`:''}</div>`;
   if(era.findings&&era.findings.length) h+=`<h2 class="section-h">Findings</h2>`+era.findings.map(t=>`<div class="note">${fillTokens(t)}</div>`).join('');
   if(run.relics.includes('tree')){const c2f=[];era.f2c.forEach((c,f)=>c2f[c]=f);h+=`<h2 class="section-h">Family Tree</h2>`+era.kin.map(k=>{const a=c2f[k.a],b2=c2f[k.b];const w=k.type==='spouse'?'married to':k.type==='sibling'?'sibling of':'parent of';return `<div class="note">${chip(a)} ${w} ${chip(b2)}</div>`}).join('')}
   h+=`<h2 class="section-h">The road</h2>${road()}<div class="stack" style="margin-top:8px"><button class="btn ghost" data-act="settings">Settings</button><button class="btn ghost debug" data-act="debugall">Debug: fill in every open answer</button><button class="btn ghost" data-act="abandon">Abandon this run</button></div>`;
