@@ -9,7 +9,7 @@
 /* Live site: the page itself can be cached for a while after a publish, while maps.js etc. come fresh, so an old page
    could show new data. version.txt holds the build stamp; if it differs, load the page again under a new URL.
    BUILD stays 'dev' in the project; stamp_build.py writes the stamp into dist/index.html and dist/version.txt. */
-(function(){var BUILD='20260928094209';if(BUILD==='dev'||window!==window.top||!window.fetch||location.protocol==='file:') return;
+(function(){var BUILD='20260928094506';if(BUILD==='dev'||window!==window.top||!window.fetch||location.protocol==='file:') return;
   fetch('version.txt?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.ok?r.text():''}).then(function(v){
     v=(v||'').trim();if(!v||v===BUILD) return;
     try{var k='lh-build-'+v;if(sessionStorage.getItem(k)) return;sessionStorage.setItem(k,'1')}catch(e){return}
@@ -4415,7 +4415,7 @@ function clockText(min,long){
 const sceneClock=(era,i,long)=>clockText(eraTimes(era)[i],long);
 /* portrait badges, one style everywhere: "#N" top left, and the time of their memory top right once it has been watched */
 const numBadge=f=>{const era=S.era;if(era&&era.sealed&&era.sealed[f]){const c=era.chars[era.f2c[f]];return `<span class="pbadge pnum pbname" title="${esc(c.first+' '+c.sur)}">${esc(c.first+' '+c.sur)}</span>`}return `<span class="pbadge pnum">#${f+1}</span>`};   // sealed: their name
-function timeBadge(f){const era=S.era,i=era.pos[f];return i!=null&&era.viewed.includes(i)?`<span class="pbadge ptime" title="When their memory happens">${sceneClock(era,i)}</span>`:''}
+function timeBadge(f){const era=S.era,i=era.pos[f];return i!=null&&(era.viewed.includes(i)||(era.sealed&&era.sealed[f]))?`<span class="pbadge ptime" title="When their memory happens">${sceneClock(era,i)}</span>`:''}
 const badges=f=>{const t=timeBadge(f);return numBadge(f).replace('pbname"','pbname'+(t?'':' wide')+'"')+t};   // a name can use the full width when there's no time badge
 /* The Dead's order: by number (the default on entering an era) or by time. Sorting by time orders the memories you have
    watched; people whose memory you haven't seen stay at the end, by number, so sorting never reveals the timeline early. */
