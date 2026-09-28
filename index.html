@@ -940,6 +940,23 @@ html.nomotion #tipov .tiphole{animation:none}
   .cine .cports.n2 .cfull{height:calc((100dvh - var(--topH) - 18px) * .86)!important;width:calc((100dvh - var(--topH) - 18px) * .86 * .46)!important}
   .cinecap,.cinetitle{max-width:none!important;min-width:0}
 }
+/* ---- destination links and the map ---- */
+.dlink{display:inline;font:inherit;color:inherit;background:none;border:0;padding:0;margin:0;cursor:pointer;text-align:inherit;
+  text-decoration:underline dotted rgba(216,184,106,.85);text-decoration-thickness:1.5px;text-underline-offset:3px}
+.dlink:hover{color:#f0d890}
+.dlink .dpin{width:.95em;height:.95em;margin-left:.2em;vertical-align:-.1em;color:#d8b86a}
+.sheet.mapsheet{max-width:760px;width:94vw;padding:12px 12px 14px}
+.dmap{display:block;width:100%;height:auto;border-radius:10px;border:1px solid #3a342a}
+.dmap .sea{fill:#14222a}
+.dmap .land{fill:#d8c9a0;stroke:#5a4a36;stroke-width:1.2;stroke-linejoin:round}
+.dmap .route{fill:none;stroke:#b0402c;stroke-width:4;stroke-dasharray:12 9;stroke-linecap:round}
+.dmap .here{fill:#b0402c;stroke:#fff5e0;stroke-width:3}
+.dmap .herering{fill:none;stroke:#b0402c;stroke-width:2;opacity:.5}
+.dmap .herelbl{font:700 22px Georgia,serif;fill:#fff5e0;paint-order:stroke;stroke:#14222a;stroke-width:5px}
+.dmap .star{fill:#f0c850;stroke:#5a3c10;stroke-width:2.5;stroke-linejoin:round}
+.mapsheet .close-row{margin-top:10px!important}
+@media (orientation:landscape) and (max-height:540px){.sheet.mapsheet{width:auto;max-width:none;height:94dvh;display:flex;flex-direction:column;align-items:center}.mapsheet .dmap{height:calc(94dvh - 70px);width:auto;aspect-ratio:4/3}}
+html.desk .sheet.mapsheet{width:auto;max-width:none}html.desk .mapsheet .dmap{height:min(680px,78vh);width:auto;aspect-ratio:4/3}
 /* ---- motion polish ---- */
 .cine::after{content:"";position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at 50% 45%,transparent 55%,rgba(0,0,0,.55) 100%);z-index:1}
 .cine>*{position:relative;z-index:2}
@@ -1045,6 +1062,7 @@ html.nomotion .cports .cport,html.nomotion .cports .cfull img,html.nomotion .cin
 <div id="rotate" aria-hidden="true"><div><div class="rotphone"></div><p>Turn your phone sideways to play</p></div></div>
 <script src="pieces.js?v=4c6edf9d"></script>
 <script src="stacker.js?v=4c6edf9d"></script>
+<script src="maps.js?v=25ef1c17"></script>
 <script src="relic_icons.js?v=d9b589be"></script>
 <script>
 
@@ -1812,17 +1830,19 @@ const ESCAPE={
 };
 const ESC_OPEN=OPENERS;
 const ESC_END=['Then the moment holds, and everything is still.','The sound stops. The scene freezes.','And then silence.'];
+/* a destination phrase the player can tap to see it on a map */
+const destLink=(era,dest,t)=>`[[D${Object.keys(DEST_HINTS[era.key]).indexOf(dest)}]]${t}[[/D]]`;
 function destHint(era,f,forceObj){
-  const E=ERAS[era.key],dest=causeOf(E,era.deathCause[f]).alive,H=DEST_HINTS[era.key][dest],X=`{F${f}}`;
-  if(!forceObj&&R.chance(.55)) return R.pick([`${X}: “${R.pick(H.say)}”`,`${X} whispers: “${R.pick(H.say)}”`]);
-  return R.pick([`${X} clutches ${R.pick(H.obj)}.`,`Tucked into ${X}’s belt is ${R.pick(H.obj)}.`,`${R.pick(H.obj).replace(/^./,x=>x.toUpperCase())} falls from ${X}’s coat.`]);
+  const E=ERAS[era.key],dest=causeOf(E,era.deathCause[f]).alive,H=DEST_HINTS[era.key][dest],X=`{F${f}}`,L=t=>destLink(era,dest,t);
+  if(!forceObj&&R.chance(.55)) return R.pick([`${X}: “${L(R.pick(H.say))}”`,`${X} whispers: “${L(R.pick(H.say))}”`]);
+  return R.pick([`${X} clutches ${L(R.pick(H.obj))}.`,`Tucked into ${X}’s belt is ${L(R.pick(H.obj))}.`,`${L(R.pick(H.obj).replace(/^./,x=>x.toUpperCase()))} falls from ${X}’s coat.`]);
 }
 function buildEscapeStory(s,E,era){
   const X=f=>`{F${f}}`,V=X(s.victim),fill=t=>t.replace(/\{V\}/g,V),others=s.present.filter(f=>f!==s.victim),H=DEST_HINTS[era.key][s.dest];
   const pa=placeAmb(era,s.place),groups=[[fill(R.pick(ESC_OPEN)),`${s.place.replace(/^./,x=>x.toUpperCase())}.`].concat(pa?[pa]:[],!pa||R.chance(.5)?[R.pick(E.ambient)]:[])];
   const people=[];
   others.forEach(f=>{
-    if(!era.survivors.includes(f)&&R.chance(.35)){const otherDest=R.pick(Object.keys(DEST_HINTS[era.key]).filter(d=>d!==s.dest));people.push(`${X(f)} has ${R.pick(DEST_HINTS[era.key][otherDest].obj)}, but makes no move to leave.`)}
+    if(!era.survivors.includes(f)&&R.chance(.35)){const otherDest=R.pick(Object.keys(DEST_HINTS[era.key]).filter(d=>d!==s.dest));people.push(`${X(f)} has ${destLink(era,otherDest,R.pick(DEST_HINTS[era.key][otherDest].obj))}, but makes no move to leave.`)}
     else people.push(`${X(f)} ${R.pick(ACT_BEFORE).replace(/\{V\}/g,V)}.`);
   });
   if(R.chance(.5)) people.push(R.pick(HERR_OBJ.generic));
@@ -1831,7 +1851,7 @@ function buildEscapeStory(s,E,era){
   if(people.length) groups.push(R.shuffle(people));
   const voices=s.voices.map(v=>{const who=v.sp==null?'A voice nobody can place':X(v.sp);if(v.lang) return `${who} cries out ${v.lang}: “${v.text}”`;if(v.to!=null) return `${who} calls to ${X(v.to)}: “${v.text}”`;return `${who}: “${v.text}”`});
   const hint=destHint(era,s.victim);
-  if(others.length&&R.chance(.3)){const o=R.pick(others);voices.push(`${X(o)} calls after ${V}: “${R.pick(H.say)}”`)}else voices.push(hint);
+  if(others.length&&R.chance(.3)){const o=R.pick(others);voices.push(`${X(o)} calls after ${V}: “${destLink(era,s.dest,R.pick(H.say))}”`)}else voices.push(hint);
   groups.push(R.shuffle(voices));
   const esc=ESCAPE[era.key];
   s.impact=groups.flat().length;   // the near-miss: same impact effect as a death, so it gives nothing away
@@ -4154,7 +4174,7 @@ function cineView(){
   const jolt=impact&&/\b(scream|crash|bang|crack|thud|roar|splash|slam|snap|shot|blast|explo|stampede|chop|smash|shatter|thunder|punch|boom|burst|split|rip|tear|crush|collaps|snarl)/i.test(t);
   const title=k===0&&cineMerged();
   const faces=title?[sc.victim]:[...new Set([...t.matchAll(/\{F(\d+)\}/g)].map(x=>+x[1]))].slice(0,2);
-  const txt=esc(t).replace(/\{F(\d+)\}/g,(x,f)=>`<span class="cname">${labelHTML(+f)}</span>`);
+  const txt=esc(noLinks(t)).replace(/\{F(\d+)\}/g,(x,f)=>`<span class="cname">${labelHTML(+f)}</span>`);   // playback advances on tap, so no map links here
   /* someone already on screen stays put: no rise-in again, and their slow push-in continues where it was */
   const now=performance.now(),was=ui.cine.onScreen||{},onScreen={};
   faces.forEach(f=>onScreen[f]=was[f]!=null?was[f]:now);ui.cine.onScreen=onScreen;
@@ -4178,7 +4198,10 @@ function cineView(){
 }
 /* ---------- rendering ---------- */
 const app=document.getElementById('app');
-const fillTokens=t=>esc(t).replace(/\{F(\d+)\}/g,(x,f)=>chip(+f));
+const PIN='<svg class="dpin" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22s7-7.1 7-12.2A7 7 0 0 0 5 9.8C5 14.9 12 22 12 22z" fill="currentColor"/><circle cx="12" cy="9.6" r="2.6" fill="#1b1812"/></svg>';
+const destLinks=h=>h.replace(/\[\[D(\d+)\]\]([\s\S]*?)\[\[\/D\]\]/g,(x,i,t)=>`<button class="dlink" data-act="map" data-d="${i}" title="Show on a map">${t}${PIN}</button>`);
+const noLinks=t=>t.replace(/\[\[\/?D\d*\]\]/g,'');
+const fillTokens=t=>destLinks(esc(t).replace(/\{F(\d+)\}/g,(x,f)=>chip(+f)));
 function guessName(f){const a=S.era.assign[f];return a.c!=null?dispName(S.era,a.c):''}
 function labelText(f){const era=S.era;if(era.sealed[f]) return charOfFace(f).name;const g=guessName(f);return `#${f+1}`+(g?` (${g})`:'')}
 function labelHTML(f){const era=S.era;if(era.sealed[f]) return `<b class="known">${esc(charOfFace(f).name)}</b>`;const g=guessName(f);return `<span class="fno">#${f+1}</span>`+(g?` <span class="guess">${esc(g)}</span>`:'')}
@@ -4439,7 +4462,7 @@ function voiceLabel(v,era){
 }
 function memoryView(){
   const era=S.era,E=E_(),m=ui.mem,s=era.scenes[m.i],tab=ui.memTab||'story';
-  const fillT=t=>esc(t).replace(/\{F(\d+)\}/g,(x,f)=>chip(+f));
+  const fillT=t=>destLinks(esc(t).replace(/\{F(\d+)\}/g,(x,f)=>chip(+f)));
   const sec=(id,inner)=>`<section class="mtab${tab===id?' on':''}" data-t="${id}">${inner}</section>`;
   let h=`<div class="memory" role="dialog" aria-label="Memory of ${esc(labelText(s.victim))}"><div class="memtop"><span>${labelHTML(s.victim)} <small class="memorder">· <b class="mclock">${sceneClock(era,m.i,true)}</b> · ${ordinal(m.i+1)} of ${era.scenes.length} in time</small></span><button class="memx" data-act="closemem" aria-label="Close memory">✕</button></div><div class="memwrap">`;
   // the portrait, shown like a card on the grid in phone landscape
@@ -4539,6 +4562,19 @@ function modalView(){
     <div class="close-row"><button class="btn primary" data-act="closemodal">Got it</button></div></div></div>`;
   if(m.kind==='pick'){const r=REW[m.tool];return `<div class="scrim" data-act="closemodal"><div class="sheet"><div class="grab"></div><h2 style="font-size:1.5rem">${esc(r.name)}</h2><p class="muted small">${esc(r.desc)} Choose a person.</p>
     <div class="pickgrid">${targetsFor(m.tool).map(f=>`<button data-act="target" data-f="${f}">${thumb(f,64)}<span class="pl">${labelHTML(f)}</span></button>`).join('')}</div><div class="close-row"><button class="btn ghost" data-act="closemodal">Cancel</button></div></div></div>`}
+  if(m.kind==='map'){const era=S.era,mp=window.LH_MAPS&&LH_MAPS[era.key]&&LH_MAPS[era.key][m.d];
+    if(!mp) return `<div class="scrim center-modal" data-act="closemodal"><div class="sheet"><p>The map isn’t available.</p><div class="close-row"><button class="btn primary" data-act="closemodal">Close</button></div></div></div>`;
+    const [fx,fy]=mp.from,[tx,ty]=mp.to,mx=(fx+tx)/2,my=(fy+ty)/2,dx=tx-fx,dy=ty-fy,bend=.18,cx=mx-dy*bend,cy=my+dx*bend;   // a gentle curve, like a route on an old chart
+    const star=(x,y,r)=>{let d='';for(let i=0;i<10;i++){const a=-Math.PI/2+i*Math.PI/5,rr=i%2?r*.45:r;d+=(i?'L':'M')+(x+rr*Math.cos(a)).toFixed(1)+' '+(y+rr*Math.sin(a)).toFixed(1)}return d+'Z'};
+    return `<div class="scrim center-modal" data-act="closemodal"><div class="sheet mapsheet" role="dialog" aria-label="Map">
+      <svg class="dmap" viewBox="0 0 800 600" role="img" aria-label="A map with the way they were headed">
+        <rect width="800" height="600" class="sea"/><path d="${mp.path}" class="land"/>
+        <path d="M${fx} ${fy}Q${cx.toFixed(1)} ${cy.toFixed(1)} ${tx} ${ty}" class="route"/>
+        <circle cx="${fx}" cy="${fy}" r="9" class="here"/><circle cx="${fx}" cy="${fy}" r="16" class="herering"/>
+        <text x="${fx+(fx>620?-20:20)}" y="${fy+(fy<60?28:-16)}" class="herelbl" text-anchor="${fx>620?'end':'start'}">You are here</text>
+        <path d="${star(tx,ty,20)}" class="star"/>
+      </svg>
+      <div class="close-row"><button class="btn primary" data-act="closemodal">Close</button></div></div></div>`}
   if(m.kind==='reveal'){const r=REW[m.id];return `<div class="scrim center-modal" data-act="closemodal"><div class="sheet reveal" role="alertdialog">
     <div class="rvhead">${relicIcon(r)}<div><div class="kicker">${esc(r.name)} · uncovered</div><h2>${m.title}</h2></div></div>
     <div class="rvrows">${m.rows.map(x=>`<div class="rvrow"><span class="rvl">${esc(x.label)}</span>${x.before!=null?`<span class="rvb">${esc(x.before)}</span><span class="rva" aria-hidden="true">→</span>`:''}<b class="rvn">${x.after}</b></div>`).join('')}</div>
@@ -4799,6 +4835,7 @@ document.addEventListener('click',e=>{
     case 'sortcycle':{const i=SORTS.indexOf(ui.sort||'num-asc');ui.sort=SORTS[(i+1)%SORTS.length];ui.deadPage=0;ui.tab='gather';render();const g=document.querySelector('.pgrid');if(g) g.scrollLeft=0;break}
     case 'deadpage':ui.deadPage=+b.dataset.p;render();break;
     case 'tool':useTool(b.dataset.id);break;
+    case 'map':ui.modal={kind:'map',d:+b.dataset.d};render();break;
     case 'mtarget':applyMend(ui.modal.tool,+b.dataset.c);break;
     case 'target':applyTarget(ui.modal.tool,+b.dataset.f);break;
     case 'toreward':S.offer=makeOffer({noInstant:true});S.screen='reward';save();render();window.scrollTo(0,0);break;
