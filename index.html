@@ -9,7 +9,7 @@
 /* Live site: the page itself can be cached for a while after a publish, while maps.js etc. come fresh, so an old page
    could show new data. version.txt holds the build stamp; if it differs, load the page again under a new URL.
    BUILD stays 'dev' in the project; stamp_build.py writes the stamp into dist/index.html and dist/version.txt. */
-(function(){var BUILD='20260928134823';if(BUILD==='dev'||window!==window.top||!window.fetch||location.protocol==='file:') return;
+(function(){var BUILD='20260928140005';if(BUILD==='dev'||window!==window.top||!window.fetch||location.protocol==='file:') return;
   fetch('version.txt?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.ok?r.text():''}).then(function(v){
     v=(v||'').trim();if(!v||v===BUILD) return;
     try{var k='lh-build-'+v;if(sessionStorage.getItem(k)) return;sessionStorage.setItem(k,'1')}catch(e){return}
@@ -991,7 +991,7 @@ html.nomotion #tipov .tiphole{animation:none}
 .ntag.neg{border-style:dashed;border-color:#9a4a3e;background:#2a1512}.ntag.neg .ntt{text-decoration:none}
 .nnot.on{background:#6a2a22;border-color:#c0594a;color:#fff}
 .ptile.notp.on{background:#5a241e;border-color:#c0594a}
-.gnadd{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:6px 0 4px}.gnadd .gnsel{flex:0 1 190px;min-width:0;padding:8px 10px;border-radius:10px;background:#1b1812;color:inherit;border:1px solid #3a342a;font:inherit}
+.gnadd{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:6px 0 4px}.gnadd .gnpick{flex:none;max-width:45%;overflow:hidden}.gnadd .gnpick .ntt{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .gnadd .gnin{flex:1 1 180px;min-width:0}.gnname{color:#e8c870;font-weight:600;margin-right:4px}
 /* typing a note on a touch screen: the box sits at the top, above the on-screen keyboard */
 html.kbtyping .cnadd,html.kbtyping .gnadd{position:fixed!important;top:10px;left:12px;right:12px;z-index:400;margin:0!important;padding:10px;border-radius:14px;background:#1b1812;border:1.5px solid #d8b86a;box-shadow:0 10px 40px rgba(0,0,0,.7);display:flex;gap:8px}
@@ -4494,7 +4494,7 @@ function applyTarget(tool,f){
 const ordinal=n=>n+(['th','st','nd','rd'][(n%100-20)%10]||['th','st','nd','rd'][n%100]||'th');
 const cinePref=()=>{try{return localStorage.getItem('the-last-hour-cutscenes')==='off'?'off':'on'}catch(e){return 'on'}};
 function openMemory(i,replay){
-  const era=S.era;ui.sheet=null;ui.memTab='story';clearTimeout(ui.cineT);
+  const era=S.era;ui.sheet=null;ui.notesNot=false;ui.memTab='story';clearTimeout(ui.cineT);
   const first=!era.viewed.includes(i);
   if(first){era.viewed.push(i);save()}
   if((first&&cinePref()==='on')||replay){ui.mem=null;ui.cine={i,k:0};render();ui.cineT=setTimeout(tickCine,beatDur());return}
@@ -4578,7 +4578,8 @@ function render(){
   setTimeout(()=>{if(typeof kbCheck==='function') kbCheck()},0);
   {const ov=document.getElementById('tipov');if(ov) ov.remove()}
   if(!S){app.innerHTML=titleScreen()+(ui.modal?modalView():'');document.documentElement.classList.add('noscroll');runPaging();return}
-  if(S.screen==='play'&&S.boon&&S.boon.left>0&&!ui.modal&&!ui.cine) openBoon();   // an unpicked relic always comes back
+  if(S.screen==='play'&&S.boon&&S.boon.left>0&&!ui.modal&&!ui.cine) openBoon();
+  {const nk=(ui.sheet?'s'+ui.sheet.f+(ui.sheet.t||''):'')+(ui.mem?'m'+ui.mem.i+(ui.memTab||''):'');if(nk!==ui._nk){ui._nk=nk;ui.notesNot=false}}   // Not starts off on every Notes tab you come to   // an unpicked relic always comes back
   const sc=S.screen;let h='';
   if(sc==='intro') h=introScreen();
   else if(sc==='play') h=playScreen();
@@ -4733,6 +4734,7 @@ function answerForm(f){
 /* full-screen picker for a name, a fate or a killer */
 function pickerView(){
   if(ui.pick.kind==='tag') return tagPickerView();
+  if(ui.pick.kind==='gname') return gnamePickerView();
   const {kind,f}=ui.pick,era=S.era,E=E_(),a=era.assign[f],c2f=[];era.f2c.forEach((cc,ff)=>c2f[cc]=ff);
   const title={name:'Who were they?',cause:'What was their cause of death?',killer:isEither(a.cause)?'Accident or murder?':'Who killed them?'}[kind];
   const tile=(v,main,sub,on,dis,extra='')=>`<button class="ptile${on?' on':''}${extra}" data-act="picked" data-v="${v}" ${dis?'disabled':''}><b>${main}</b>${sub?`<small>${sub}</small>`:''}</button>`;
@@ -4915,12 +4917,19 @@ function satchelView(){
   return h;
 }
 function recordsNotes(){
-  const era=S.era,E=E_(),notes=era.gnotes=era.gnotes||[];
-  const opts=E.tiers.flatMap(([id,tname])=>{const cs=era.chars.map((c,i)=>c.tier===id&&!dispName(era,i).startsWith('[')?i:-1).filter(i=>i>=0).sort((a,b)=>dispName(era,a).localeCompare(dispName(era,b)));
-    return cs.length?[`<optgroup label="${esc(tname)}">`+cs.map(c=>`<option value="${c}"${ui.gDraft&&ui.gDraft.c===String(c)?' selected':''}>${esc(dispName(era,c))}</option>`).join('')+`</optgroup>`]:[]}).join('');
+  const era=S.era,notes=era.gnotes=era.gnotes||[],d=ui.gDraft||{},c=d.c!=null&&d.c!==''?+d.c:null;
   let h=`<h2 class="section-h">Notes</h2>`+notes.map((n,i)=>`<div class="cnote"><span>${n.c!=null?`<b class="gnname">${esc(dispName(era,n.c))}</b> `:''}${esc(n.t)}</span><button class="cnx" data-act="gnotedel" data-i="${i}" aria-label="Delete note">✕</button></div>`).join('');
-  if(notes.length<GNOTE_MAX) h+=`<form class="gnadd"><select class="gnsel" aria-label="Tag a name (optional)"><option value="">No name</option>${opts}</select><input class="cnin gnin" maxlength="${GNOTE_LEN}" placeholder="A note…" enterkeyhint="done" autocomplete="off" value="${esc(ui.gDraft?ui.gDraft.v:'')}"><button type="submit" class="btn ghost cnbtn">Add</button></form>`;
+  if(notes.length<GNOTE_MAX) h+=`<form class="gnadd">${c!=null?`<button type="button" class="ntag t-name gnpick" data-act="gnname" title="Change the name"><span class="ntt">${esc(dispName(era,c))}</span><span data-act="gnclear" aria-label="No name">✕</span></button>`:`<button type="button" class="btn ghost gnpick" data-act="gnname">+ Name</button>`}<input class="cnin gnin" maxlength="${GNOTE_LEN}" placeholder="A note…" enterkeyhint="done" autocomplete="off" value="${esc(d.v||'')}"><button type="submit" class="btn ghost cnbtn">Add</button></form>`;
   return h;
+}
+/* picker for the Records note's name: one name, tap to choose */
+function gnamePickerView(){
+  const era=S.era,E=E_(),d=ui.gDraft||{};let body='';
+  E.tiers.forEach(([id,tname])=>{const cs=era.chars.map((c,i)=>c.tier===id&&!dispName(era,i).startsWith('[')?i:-1).filter(i=>i>=0).sort((a,b)=>dispName(era,a).localeCompare(dispName(era,b)));if(!cs.length) return;
+    body+=`<section class="psec"><h3>${esc(tname)}</h3><div class="pgridt">`+cs.map(c=>`<button class="ptile${String(d.c)===String(c)?' on':''}" data-act="gnamed" data-v="${c}"><b>${esc(dispName(era,c))}</b></button>`).join('')+`</div></section>`});
+  return `<div class="picker" role="dialog" aria-label="Who is this note about?"><div class="ptop"><div><span class="pfor">A note in your Records · optional</span><h2>Who is this note about?</h2></div>
+    <div class="pbtns">${d.c!=null&&d.c!==''?`<button class="btn ghost light" data-act="gnamed" data-v="">No name</button>`:''}<button class="btn primary" data-act="closepick">Done</button></div></div>
+    <div class="pbody" data-page="grid">${body}</div></div>`;
 }
 function recordsView(){
   const run=S.run,era=S.era,E=E_();
@@ -5180,9 +5189,12 @@ document.addEventListener('click',e=>{
     case 'continue':S=load();render();break;
     case 'home':clearSave();S=null;render();break;
     case 'rules':ui.modal={kind:'rules'};render();break;
-    case 'sheettab':ui.sheet.t=b.dataset.t;render();break;
+    case 'sheettab':ui.sheet.t=b.dataset.t;ui.notesNot=false;render();break;
     case 'opentag':ui.pick={kind:'tag',tk:b.dataset.k,f:+b.dataset.f,not:!!ui.notesNot};render();break;
     case 'nottoggle':ui.notesNot=!ui.notesNot;render();break;
+    case 'gnname':{const inp=document.querySelector('.gnin');ui.gDraft=Object.assign({},ui.gDraft,{v:inp?inp.value:''});if(e.target.closest('[data-act="gnclear"]')){ui.gDraft.c=null;render();break}ui.pick={kind:'gname'};render();break}
+    case 'gnclear':{const inp=document.querySelector('.gnin');ui.gDraft={v:inp?inp.value:'',c:null};render();break}
+    case 'gnamed':ui.gDraft=Object.assign({},ui.gDraft,{c:b.dataset.v===''?null:+b.dataset.v});ui.pick=null;render();break;
     case 'gnotedel':S.era.gnotes.splice(+b.dataset.i,1);save();render();break;
     case 'tagged':{const {tk,f}=ui.pick,p=pnote(f),v=tagConv(tk,b.dataset.v),i=p[tk].indexOf(v);
       if(i>=0) p[tk].splice(i,1);else p[tk].push(v);
@@ -5191,7 +5203,7 @@ document.addEventListener('click',e=>{
     case 'untag':{const p=pnote(+b.dataset.f),k=b.dataset.k,v=tagConv(k,b.dataset.v),i=p[k].indexOf(v);if(i>=0) p[k].splice(i,1);save();render();break}
     case 'addnote':addNote(+b.dataset.f);break;
     case 'delnote':pnote(+b.dataset.f).custom.splice(+b.dataset.i,1);save();render();break;
-    case 'memtab':ui.memTab=b.dataset.t;render();{const el=document.querySelector('.mtab.on');if(el) el.scrollTop=0}break;
+    case 'memtab':ui.memTab=b.dataset.t;ui.notesNot=false;render();{const el=document.querySelector('.mtab.on');if(el) el.scrollTop=0}break;
     case 'openpick':ui.pick={kind:b.dataset.kind,f:+b.dataset.f};render();{const pb=document.querySelector('.picker .ptile.on');if(pb) pb.scrollIntoView({block:'center'})}break;
     case 'picked':{const {kind,f}=ui.pick;ui.pick=null;setAnswer(f,kind,b.dataset.v===''?null:b.dataset.v);break}
     case 'closepick':ui.pick=null;render();break;
@@ -5217,7 +5229,7 @@ document.addEventListener('click',e=>{
     case 'cineskip':endCine();break;
     case 'replay':openMemory(+b.dataset.i,true);break;
     case 'closemem':clearTimeout(ui.memT);ui.mem=null;ui.backFromMem=true;render();break;
-    case 'face':if(ui.modal&&ui.modal.kind==='chart') ui.modal=null;ui.sheet={f:+b.dataset.f};render();break;
+    case 'face':if(ui.modal&&ui.modal.kind==='chart') ui.modal=null;ui.sheet={f:+b.dataset.f};ui.notesNot=false;render();break;
     case 'closesheet':ui.sheet=null;render();break;
     case 'closemodal':{const wasMsg=ui.modal&&ui.modal.kind==='msg';ui.modal=null;if(wasMsg&&S&&S.boon&&S.boon.left>0) openBoon();render();break}
     case 'pickboon':pickBoon(b.dataset.id);break;
@@ -5264,10 +5276,9 @@ const KB_TOUCH=matchMedia('(pointer:coarse)').matches||(navigator.maxTouchPoints
 function kbCheck(){const a=document.activeElement;document.documentElement.classList.toggle('kbtyping',KB_TOUCH&&!!(a&&a.classList&&a.classList.contains('cnin')))}
 document.addEventListener('focusin',kbCheck);document.addEventListener('focusout',()=>setTimeout(kbCheck,0));
 document.addEventListener('submit',e=>{const fm=e.target.closest('.cnadd');if(!fm) return;e.preventDefault();addNote(+fm.dataset.f,fm.querySelector('.cnin'))});
-document.addEventListener('input',e=>{if(e.target.matches('.gnin')){const fm=e.target.closest('.gnadd');ui.gDraft={v:e.target.value,c:fm?fm.querySelector('.gnsel').value:''};return}if(e.target.matches('.cnin')) ui.noteDraft={f:+e.target.dataset.f,v:e.target.value}});
-document.addEventListener('change',e=>{if(e.target.matches('.gnsel')){const fm=e.target.closest('.gnadd');ui.gDraft={v:fm?fm.querySelector('.gnin').value:'',c:e.target.value}}});
+document.addEventListener('input',e=>{if(e.target.matches('.gnin')){ui.gDraft=Object.assign({},ui.gDraft,{v:e.target.value});return}if(e.target.matches('.cnin')) ui.noteDraft={f:+e.target.dataset.f,v:e.target.value}});
 document.addEventListener('submit',e=>{const fm=e.target.closest('.gnadd');if(!fm) return;e.preventDefault();
-  const t=fm.querySelector('.gnin').value.trim().slice(0,GNOTE_LEN),c=fm.querySelector('.gnsel').value;if(!t) return;
+  const t=fm.querySelector('.gnin').value.trim().slice(0,GNOTE_LEN),c=ui.gDraft&&ui.gDraft.c!=null&&ui.gDraft.c!==''?ui.gDraft.c:'';if(!t) return;
   const notes=S.era.gnotes=S.era.gnotes||[];if(notes.length>=GNOTE_MAX) return;notes.push({c:c===''?null:+c,t});ui.gDraft=null;save();render()});
 // pressing Add must not blur the box first: on phones that closes the keyboard, the layout jumps and the tap misses the button
 document.addEventListener('pointerdown',e=>{if(e.target.closest('.cnbtn')&&document.activeElement&&document.activeElement.matches('.cnin')) e.preventDefault()});
