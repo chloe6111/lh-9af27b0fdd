@@ -9,7 +9,7 @@
 /* Live site: the page itself can be cached for a while after a publish, while maps.js etc. come fresh, so an old page
    could show new data. version.txt holds the build stamp; if it differs, load the page again under a new URL.
    BUILD stays 'dev' in the project; stamp_build.py writes the stamp into dist/index.html and dist/version.txt. */
-(function(){var BUILD='20260928084417';if(BUILD==='dev'||window!==window.top||!window.fetch||location.protocol==='file:') return;
+(function(){var BUILD='20260928090257';if(BUILD==='dev'||window!==window.top||!window.fetch||location.protocol==='file:') return;
   fetch('version.txt?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.ok?r.text():''}).then(function(v){
     v=(v||'').trim();if(!v||v===BUILD) return;
     try{var k='lh-build-'+v;if(sessionStorage.getItem(k)) return;sessionStorage.setItem(k,'1')}catch(e){return}
@@ -974,7 +974,8 @@ html.nomotion #tipov .tiphole{animation:none}
   .pgrid{display:grid!important;grid-auto-flow:column;grid-template-columns:none!important;grid-template-rows:repeat(2,minmax(0,1fr));grid-auto-columns:calc((100dvh - var(--topH) - 26px) / 2 * .52);gap:8px}
   .pcard{flex:none!important;width:auto!important;height:auto!important;min-height:0}
   .pgrid > .pcard{scroll-snap-align:none}
-  .pgrid > .pcard:nth-child(odd){scroll-snap-align:start;scroll-snap-stop:normal}
+  .pgrid > .pcard:nth-child(4n+1){scroll-snap-align:none}
+  .pgrid > .pcard:nth-child(8n+1){scroll-snap-align:start;scroll-snap-stop:always}   /* a page of four columns per swipe */
   .pcard .pbadge{top:4px;font-size:11px;padding:3px 6px}.pcard .pbadge.pnum{left:4px}.pcard .pbadge.ptime{right:4px}
   .pcard .pname{font-size:11px!important;bottom:22px!important}.pcard .pfate{font-size:10px!important}
   /* playback portraits keep a normal card shape too (sized from the height, not the thin phone-card width) */
@@ -982,6 +983,9 @@ html.nomotion #tipov .tiphole{animation:none}
   .cine .cports.n2 .cfull{height:calc((100dvh - var(--topH) - 18px) * .86)!important;width:calc((100dvh - var(--topH) - 18px) * .86 * .46)!important}
   .cinecap,.cinetitle{max-width:none!important;min-width:0}
 }
+/* typing a note on a touch screen: the box sits at the top, above the on-screen keyboard */
+html.kbtyping .cnadd{position:fixed!important;top:10px;left:12px;right:12px;z-index:400;margin:0!important;padding:10px;border-radius:14px;background:#1b1812;border:1.5px solid #d8b86a;box-shadow:0 10px 40px rgba(0,0,0,.7);display:flex;gap:8px}
+html.kbtyping .cnadd .cnin{flex:1;font-size:16px}
 /* ---- destination links and the map ---- */
 .dlink{display:inline;font:inherit;color:inherit;background:none;border:0;padding:0;margin:0;cursor:pointer;text-align:inherit;
   text-decoration:underline dotted rgba(216,184,106,.85);text-decoration-thickness:1.5px;text-underline-offset:3px}
@@ -3996,9 +4000,10 @@ function consult(){
     const right=allRight.slice(0,2);right.forEach(f=>era.sealed[f]=true);run.sealed+=right.length;ui.fresh=right;
     const cleared=era.sealed.every(Boolean);
     run.goodConsults=(run.goodConsults||0)+1;
+    const healed=run.hearts<START_HEARTS;if(healed) run.hearts++;
     const earn=!cleared&&run.goodConsults%2===0;   // a relic every second success; sealing an era's last fates earns the era's own relic choice instead
     if(earn) S.boon={left:((S.boon&&S.boon.left)||0)+1,offer:null};
-    let body=`${right.length} fate${right.length>1?'s':''} sealed: ${right.map(f=>charOfFace(f).name).join(', ')}.${cleared?'':earn?' You earn a relic pick.':' One more successful consultation earns a relic.'} The Ledger seals two fates at a time and does not say which of your other answers are right or wrong.`;
+    let body=`${right.length} fate${right.length>1?'s':''} sealed: ${right.map(f=>charOfFace(f).name).join(', ')}.${healed?' You regain a heart.':''}${cleared?'':earn?' You earn a relic pick.':' One more successful consultation earns a relic.'} The Ledger seals two fates at a time and does not say which of your other answers are right or wrong.`;
     run.consults=(run.consults||0)+1;if(run.relics.includes('fate')&&run.consults%3===0){run.charges.glimpse=(run.charges.glimpse||0)+1;body+=' Fateweaver grants you a Glimpse.'}
     if(cleared){Object.keys(run.charges).forEach(k=>{if(REW[k]&&REW[k].expires==='era') delete run.charges[k]});run.relics=run.relics.filter(k=>!(REW[k]&&REW[k].expires==='era'));S.screen='cleared';ui.sheet=null;ui.mem=null;ui.modal={kind:'msg',title:'The Ledger accepts',body};save();render();window.scrollTo(0,0);return}
     ui.modal={kind:'msg',title:'The Ledger accepts',body};
@@ -4028,7 +4033,7 @@ function makeOffer(opt={}){
   const run=S.run,cnt=S.era&&S.era.gambler?4:3;   // Gambler's Coin: four choices for every offer in that era
   const legOdds=run.relics.includes('blind')?.10:.05;
   const usable=r=>(r.kind==='charge'&&!['steady','slate'].includes(r.id))||!!r.perEra;   // relics with a Use button
-  const avail=REWARDS.filter(r=>!(run.tutorial&&r.id==='blind')&&!(run.tutorial&&opt.start&&!usable(r))&&!(r.kind==='relic'&&run.relics.includes(r.id))&&!(opt.noInstant&&(r.kind==='instant'||r.expires==='era'))),out=[];let g=0;
+  const avail=REWARDS.filter(r=>!(run.tutorial&&(r.id==='blind'||r.id==='gambler'))&&!(run.tutorial&&opt.start&&!usable(r))&&!(r.kind==='relic'&&run.relics.includes(r.id))&&!(opt.noInstant&&(r.kind==='instant'||r.expires==='era'))),out=[];let g=0;
   while(out.length<cnt&&g++<400){const roll=Math.random(),rar=roll<legOdds?'l':roll<legOdds+.25?'r':'c';const pool=avail.filter(r=>r.rar===rar&&!out.includes(r.id));if(pool.length) out.push(R.pick(pool).id)}
   const lasting=id=>['relic','next','geneal'].includes(REW[id].kind);
   if(!out.some(lasting)&&!(run.tutorial&&opt.start)){const pool=avail.filter(r=>lasting(r.id)&&r.rar!=='l'&&!out.includes(r.id));if(pool.length) out[R.int(0,out.length-1)]=R.pick(pool).id}
@@ -4297,8 +4302,10 @@ function chip(f){
   return `<button class="chip${sealed?' sealed':''}" data-act="face" data-f="${f}">${thumb(f,24)}<span>${labelHTML(f)}</span></button>`;
 }
 function render(){
+  setTimeout(()=>{if(typeof kbCheck==='function') kbCheck()},0);
   {const ov=document.getElementById('tipov');if(ov) ov.remove()}
   if(!S){app.innerHTML=titleScreen()+(ui.modal?modalView():'');document.documentElement.classList.add('noscroll');runPaging();return}
+  if(S.screen==='play'&&S.boon&&S.boon.left>0&&!ui.modal&&!ui.cine) openBoon();   // an unpicked relic always comes back
   const sc=S.screen;let h='';
   if(sc==='intro') h=introScreen();
   else if(sc==='play') h=playScreen();
@@ -4646,7 +4653,7 @@ function modalView(){
     <p class="rl">For each person, work out their name from the manifest and their fate: how they died, and who killed them if someone did, or where they escaped to if they lived.</p>
     <p class="rl">How someone dresses hints at their station and role. Language and accent point to a homeland (without a language phrasebook or the Translator, some languages go unrecognised). Keys match the quarters register. Family members share a surname. Sometimes a name is called out. When you have a traveller’s map, the places survivors mention can be tapped to see where they were headed.</p>
     <p class="rl">The manifest is damaged: some names or homelands are torn away, and each ? is a letter you can’t read. Voices, monograms, family ties and how people are treated all help you match a face to a damaged entry.</p>
-    <p class="rl">Consult the Ledger to test your answers. If at least two open fates are fully right, two of them are sealed; press again to seal more. If not, you lose a heart.</p>
+    <p class="rl">Consult the Ledger to test your answers. If at least two open fates are fully right, two of them are sealed and you regain a heart (up to five); press again to seal more. If not, you lose a heart.</p>
     <p class="rl">Each successful consultation seals two fates, and every second one earns a relic pick: three relics to choose from. Every era also begins with a relic pick, and sealing an era’s last fates earns its own relic choice.</p>
     <p class="rl">Once a person’s fate is sealed, their name replaces their number everywhere. Until then they show as their number, with your guess in grey.</p>
     <p class="rl">Seal every fate to finish an era, then choose one of three relics. Each new era starts with your hearts refilled. Survive every era to complete the chronicle.</p>
@@ -4818,7 +4825,7 @@ const TIPS=[
   {id:'firstpick',when:()=>ui.modal&&ui.modal.kind==='boon'&&S.boon&&!S.boon.start&&(S.run.goodConsults||0)>=2,at:()=>$vis('.scrim .sheet'),
    text:()=>'Two successful consultations: that’s earned you a relic. <b>Every second time the Ledger accepts your answers</b>, you get to pick one of these.'},
   {id:'hearts',when:()=>S.screen==='play'&&S.run.fails>=1&&!ui.modal&&!ui.mem&&!ui.cine&&!ui.pick,at:()=>$vis('.top .hearts'),
-   text:()=>`The Ledger was silent, so you lost a heart. <b>You have ${S.run.hearts} left</b>; lose them all and the chronicle ends. Hearts refill at the start of every era.`},
+   text:()=>`The Ledger was silent, so you lost a heart. <b>You have ${S.run.hearts} left</b>; lose them all and the chronicle ends. <b>Every successful consultation wins a heart back</b> (up to ${START_HEARTS}), and hearts refill at the start of every era.`},
   {id:'verdict',when:()=>!!ui.mem&&!ui.cine&&!ui.modal&&!ui.pick&&!ui.sheet,at:()=>$vis('.mtab.on[data-t="fate"] .memform'),
    text:()=>'Your goal for every person: <b>who they were, how they died, and who killed them</b> if someone did. You can change these answers any time. Nothing is final until you <b>Consult the Ledger</b>.'},
   {id:'people',when:()=>!!ui.mem&&!ui.cine&&!ui.modal&&!ui.pick&&!ui.sheet,at:()=>$vis('.mtab.on[data-t="people"] .present .chip'),
@@ -4834,7 +4841,7 @@ const TIPS=[
   {id:'time',when:onDead,at:()=>$vis('.pcard .ptime'),
    text:()=>'Once you’ve watched someone’s memory, the corner shows <b>the time it happened</b> that night. Line the times up to work out who was still alive when.'},
   {id:'consult',when:()=>onDead()&&ui.backFromMem,at:()=>$vis('.topact [data-act="consult"]')||$vis('[data-act="consult"]'),
-   text:()=>'When you think you know someone, fill in their Verdict, then <b>Consult the Ledger</b>. If at least two of your open answers are fully right, it seals two of them. If not, you lose a heart.'},
+   text:()=>`When you think you know someone, fill in their Verdict, then <b>Consult the Ledger</b>. If at least two of your open answers are fully right, it seals two of them and <b>you regain a heart</b> (up to ${START_HEARTS}). If not, you lose a heart.`},
 ];
 function tutorialCheck(){
   if(!S||!S.run||!S.run.tutorial||ui.cine||document.getElementById('tipov')) return;
@@ -4952,8 +4959,12 @@ document.addEventListener('change',e=>{
   setAnswer(+s.dataset.f,s.dataset.change,s.value===''?null:s.value);
 });
 document.addEventListener('keydown',e=>{if(e.target.matches&&e.target.matches('.cnin')) return;
-  if(DESK&&S&&S.screen==='play'&&ui.tab==='gather'&&!ui.mem&&!ui.cine&&!ui.pick&&!ui.modal&&!ui.sheet&&(e.key==='ArrowRight'||e.key==='ArrowLeft')){const n=Math.ceil(S.era.n/12),p=(ui.deadPage||0)+(e.key==='ArrowRight'?1:-1);if(p>=0&&p<n){ui.deadPage=p;render()}return}if(ui.cine&&(e.key===' '||e.key==='Enter'||e.key==='ArrowRight')){e.preventDefault();tickCine();return}if(e.key==='Escape'&&ui.cine){endCine();return}if(e.key==='Escape'){if(ui.pick) ui.pick=null;else if(ui.sheet) ui.sheet=null;else if(ui.modal&&ui.modal.kind!=='msg') ui.modal=null;else if(ui.mem){clearTimeout(ui.memT);ui.mem=null}render()}});
+  if(DESK&&S&&S.screen==='play'&&ui.tab==='gather'&&!ui.mem&&!ui.cine&&!ui.pick&&!ui.modal&&!ui.sheet&&(e.key==='ArrowRight'||e.key==='ArrowLeft')){const n=Math.ceil(S.era.n/12),p=(ui.deadPage||0)+(e.key==='ArrowRight'?1:-1);if(p>=0&&p<n){ui.deadPage=p;render()}return}if(ui.cine&&(e.key===' '||e.key==='Enter'||e.key==='ArrowRight')){e.preventDefault();tickCine();return}if(e.key==='Escape'&&ui.cine){endCine();return}if(e.key==='Escape'){if(ui.pick) ui.pick=null;else if(ui.sheet) ui.sheet=null;else if(ui.modal&&ui.modal.kind!=='msg'&&ui.modal.kind!=='boon') ui.modal=null;else if(ui.mem){clearTimeout(ui.memT);ui.mem=null}render()}});
 /* custom notes: submit from the Add button or the keyboard's Enter/Done key */
+/* on touch screens, lift the note box above the keyboard while typing in it */
+const KB_TOUCH=matchMedia('(pointer:coarse)').matches||(navigator.maxTouchPoints>0&&!matchMedia('(any-pointer:fine)').matches);
+function kbCheck(){const a=document.activeElement;document.documentElement.classList.toggle('kbtyping',KB_TOUCH&&!!(a&&a.classList&&a.classList.contains('cnin')))}
+document.addEventListener('focusin',kbCheck);document.addEventListener('focusout',()=>setTimeout(kbCheck,0));
 document.addEventListener('submit',e=>{const fm=e.target.closest('.cnadd');if(!fm) return;e.preventDefault();addNote(+fm.dataset.f,fm.querySelector('.cnin'))});
 document.addEventListener('input',e=>{if(e.target.matches('.cnin')) ui.noteDraft={f:+e.target.dataset.f,v:e.target.value}});
 // pressing Add must not blur the box first: on phones that closes the keyboard, the layout jumps and the tap misses the button
