@@ -9,7 +9,7 @@
 /* Live site: the page itself can be cached for a while after a publish, while maps.js etc. come fresh, so an old page
    could show new data. version.txt holds the build stamp; if it differs, load the page again under a new URL.
    BUILD stays 'dev' in the project; stamp_build.py writes the stamp into dist/index.html and dist/version.txt. */
-(function(){var BUILD='20260927233021';if(BUILD==='dev'||window!==window.top||!window.fetch||location.protocol==='file:') return;
+(function(){var BUILD='20260927233742';if(BUILD==='dev'||window!==window.top||!window.fetch||location.protocol==='file:') return;
   fetch('version.txt?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.ok?r.text():''}).then(function(v){
     v=(v||'').trim();if(!v||v===BUILD) return;
     try{var k='lh-build-'+v;if(sessionStorage.getItem(k)) return;sessionStorage.setItem(k,'1')}catch(e){return}
@@ -985,7 +985,9 @@ html.nomotion #tipov .tiphole{animation:none}
 .dmap .star{fill:#f0c850;stroke:#5a3c10;stroke-width:2.5;stroke-linejoin:round}
 .mapsheet .close-row{margin-top:10px!important}
 @media (orientation:landscape) and (max-height:540px){.sheet.mapsheet{width:auto;max-width:none;height:auto;padding:0;background:none;box-shadow:none;border:0;display:flex;align-items:center;justify-content:center}.scrim:has(> .mapsheet){padding:8px}.mapsheet .dmap{height:min(calc(100dvh - 20px),calc((100vw - 24px)*.75));width:auto;aspect-ratio:4/3;border-radius:12px}.mapsheet .close-row{display:none}}
-.mapsheet{cursor:pointer}.scrim:has(> .mapsheet){overflow:hidden}
+.mapsheet{cursor:pointer}
+/* narrow landscape screens (the unfolded Fold's 700 px frame): shorter top-bar labels so the era title fits */
+@media (orientation:landscape) and (max-height:540px) and (max-width:780px){.topact .tlong{display:none}}.scrim:has(> .mapsheet){overflow:hidden}
 html.desk .sheet.mapsheet{width:auto;max-width:none}html.desk .mapsheet .dmap{height:min(680px,78vh);width:auto;aspect-ratio:4/3}
 .lshort{display:none}
 /* phones held sideways: short labels so the four memory buttons always fit (narrow screens like a Fold), and no ✕ (Back to the dead does it) */
@@ -4344,7 +4346,7 @@ function playScreen(){
     satchel:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 9h14l-1.2 11H6.2z"/><path d="M9 9V7a3 3 0 0 1 6 0v2"/><path d="M5 13h14"/></svg>`,
     records:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3l2.5 5.5L20 9l-4 4 1 6-5-3-5 3 1-6-4-4 5.5-.5z"/></svg>`};
   return `<header class="top"><div class="wrap"><div class="era"><b>${esc(E.title)}</b><span>Era ${run.idx+1} of ${ERA_COUNT} · ${era.sealed.filter(Boolean).length} of ${era.n} sealed</span></div>${hearts()}
-    <div class="topact">${DESK&&ui.tab==='gather'?'<button class="btn ghost tbtn dbgtwo" data-act="debugtwo" title="Debug: fill in two correct answers">Debug: solve 2</button>':''}<button class="btn ghost tbtn sortbtn" data-act="sortcycle" title="Change the order of The Dead">Sort: ${SORT_LABEL[ui.sort||'num-asc']}</button><span class="tprog"><b>${filled}</b>/${open.length} answered</span>${SHOW_CHART?'<button class="btn ghost tbtn" data-act="chart">Hierarchy</button>':''}<button class="btn seal tbtn" data-act="consult" ${filled<need?'disabled':''}>Consult the Ledger</button></div></div></header>
+    <div class="topact">${DESK&&ui.tab==='gather'?'<button class="btn ghost tbtn dbgtwo" data-act="debugtwo" title="Debug: fill in two correct answers">Debug: solve 2</button>':''}<button class="btn ghost tbtn sortbtn" data-act="sortcycle" title="Change the order of The Dead">Sort: ${SORT_LABEL[ui.sort||'num-asc']}</button><span class="tprog"><b>${filled}</b>/${open.length}<span class="tlong"> answered</span></span>${SHOW_CHART?'<button class="btn ghost tbtn" data-act="chart">Hierarchy</button>':''}<button class="btn seal tbtn" data-act="consult" ${filled<need?'disabled':''}>Consult<span class="tlong"> the Ledger</span></button></div></div></header>
   <main><div class="wrap">${body}</div></main>
   <div class="dock"><div class="actionbar"><div class="wrap"><div class="prog"><b>${filled}</b> of ${open.length} open fates answered<br><span class="small">${need<2?'The last one must be right':'2 right answers seal them'}</span></div>
   <button class="btn seal" data-act="consult" ${filled<need?'disabled':''}>Consult the Ledger</button></div></div>
