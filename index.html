@@ -975,6 +975,14 @@ html.nomotion #tipov .tiphole{animation:none}
 .mapsheet .close-row{margin-top:10px!important}
 @media (orientation:landscape) and (max-height:540px){.sheet.mapsheet{width:auto;max-width:none;height:94dvh;display:flex;flex-direction:column;align-items:center}.mapsheet .dmap{height:calc(94dvh - 70px);width:auto;aspect-ratio:4/3}}
 html.desk .sheet.mapsheet{width:auto;max-width:none}html.desk .mapsheet .dmap{height:min(680px,78vh);width:auto;aspect-ratio:4/3}
+.lshort{display:none}
+/* phones held sideways: short labels so the four memory buttons always fit (narrow screens like a Fold), and no ✕ (Back to the dead does it) */
+@media (orientation:landscape) and (max-height:540px){
+  .memnav .lfull{display:none}.memnav .lshort{display:inline}
+  .memnav{flex-wrap:nowrap}.memnav .memact{flex:none;min-width:0}
+  .memnav .btn{min-width:0;padding-left:10px;padding-right:10px}
+  .memory .memx{display:none}
+}
 /* ---- motion polish ---- */
 .cine::after{content:"";position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at 50% 45%,transparent 55%,rgba(0,0,0,.55) 100%);z-index:1}
 .cine>*{position:relative;z-index:2}
@@ -4217,7 +4225,7 @@ function cineView(){
 /* ---------- rendering ---------- */
 const app=document.getElementById('app');
 const PIN='<svg class="dpin" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22s7-7.1 7-12.2A7 7 0 0 0 5 9.8C5 14.9 12 22 12 22z" fill="currentColor"/><circle cx="12" cy="9.6" r="2.6" fill="#1b1812"/></svg>';
-const destLinks=h=>h.replace(/\[\[D(\d+)\]\]([\s\S]*?)\[\[\/D\]\]/g,(x,i,t)=>`<button class="dlink" data-act="map" data-d="${i}" title="Show on a map">${t}${PIN}</button>`);
+const destLinks=h=>h.replace(/\[\[D(\d+)\]\]([\s\S]*?)\[\[\/D\]\]/g,(x,i,t)=>`<span class="dlink" role="button" tabindex="0" data-act="map" data-d="${i}" title="Show on a map">${t}${PIN}</span>`);
 const noLinks=t=>t.replace(/\[\[\/?D\d*\]\]/g,'');
 const fillTokens=t=>destLinks(esc(t).replace(/\{F(\d+)\}/g,(x,f)=>chip(+f)));
 function guessName(f){const a=S.era.assign[f];return a.c!=null?dispName(S.era,a.c):''}
@@ -4500,8 +4508,8 @@ function memoryView(){
   h+=sec('fate',`<h3 class="memh">Your verdict on ${labelShort(s.victim)}</h3><div class="memform">${answerForm(s.victim)}</div>
     ${era.sealed[s.victim]?'':`<button class="btn ghost light debug" data-act="debugsolve" data-f="${s.victim}">Debug: fill in answer</button>`}`);
   if(DESK) return deskMemory(h,m,s,era);
-  h+=`<div class="memnav"><div class="memact">${m.i>0?`<button class="btn ghost light" data-act="memi" data-i="${m.i-1}">Earlier in time</button>`:''}${m.i<era.scenes.length-1?`<button class="btn ghost light" data-act="memi" data-i="${m.i+1}">Later in time</button>`:''}</div>
-    <div class="memact"><button class="btn ghost light" data-act="replay" data-i="${m.i}">Watch the scene again</button></div>
+  h+=`<div class="memnav"><div class="memact">${m.i>0?`<button class="btn ghost light" data-act="memi" data-i="${m.i-1}"><span class="lfull">Earlier in time</span><span class="lshort">‹ Earlier</span></button>`:''}${m.i<era.scenes.length-1?`<button class="btn ghost light" data-act="memi" data-i="${m.i+1}"><span class="lfull">Later in time</span><span class="lshort">Later ›</span></button>`:''}</div>
+    <div class="memact"><button class="btn ghost light" data-act="replay" data-i="${m.i}"><span class="lfull">Watch the scene again</span><span class="lshort">Watch again</span></button></div>
     <div class="memact"><button class="btn primary" data-act="closemem">Back to the dead</button></div></div>`;
   return h+`</div></div></div>`;
 }
