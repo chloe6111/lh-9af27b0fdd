@@ -6,6 +6,16 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>The Last Hour</title>
 <script>
+/* Live site: the page itself can be cached for a while after a publish, while maps.js etc. come fresh, so an old page
+   could show new data. version.txt holds the build stamp; if it differs, load the page again under a new URL.
+   BUILD stays 'dev' in the project; stamp_build.py writes the stamp into dist/index.html and dist/version.txt. */
+(function(){var BUILD='20260927225402';if(BUILD==='dev'||window!==window.top||!window.fetch||location.protocol==='file:') return;
+  fetch('version.txt?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.ok?r.text():''}).then(function(v){
+    v=(v||'').trim();if(!v||v===BUILD) return;
+    try{var k='lh-build-'+v;if(sessionStorage.getItem(k)) return;sessionStorage.setItem(k,'1')}catch(e){return}
+    var u=new URL(location.href);u.searchParams.set('b',v);location.replace(u.href)}).catch(function(){})})();
+</script>
+<script>
 /* Desktop / Steam: the game gets its own no-scroll desktop layout (html.desk). The page hosts it in a frame with a
    fixed desktop canvas, 900 px tall and at least 1440 wide (wider on wide screens), scaled to fill the monitor
    (1920x1080 -> 1600x900 at 1.2x; 1280x800 -> 1440x900 at 0.89x). */
