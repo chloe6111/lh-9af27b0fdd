@@ -9,7 +9,7 @@
 /* Live site: the page itself can be cached for a while after a publish, while maps.js etc. come fresh, so an old page
    could show new data. version.txt holds the build stamp; if it differs, load the page again under a new URL.
    BUILD stays 'dev' in the project; stamp_build.py writes the stamp into dist/index.html and dist/version.txt. */
-(function(){var BUILD='20260928141319';if(BUILD==='dev'||window!==window.top||!window.fetch||location.protocol==='file:') return;
+(function(){var BUILD='20260928150111';if(BUILD==='dev'||window!==window.top||!window.fetch||location.protocol==='file:') return;
   fetch('version.txt?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.ok?r.text():''}).then(function(v){
     v=(v||'').trim();if(!v||v===BUILD) return;
     try{var k='lh-build-'+v;if(sessionStorage.getItem(k)) return;sessionStorage.setItem(k,'1')}catch(e){return}
@@ -4196,7 +4196,9 @@ function withSeed(key,fn){const o=Math.random;Math.random=mulberry(hashStr(key))
 const randomCode=()=>{let c='';for(let i=0;i<6;i++) c+=SEED_ABC[Math.floor(Math.random()*SEED_ABC.length)];return c};
 const cleanCode=t=>String(t||'').toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,8);
 const todayStr=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
-const dailyCode=d=>withSeed('daily|'+d,randomCode);
+/* a hand-picked daily for a given date (e.g. for testers); every other date is worked out from the date itself */
+const DAILY_OVERRIDES={'2026-09-28':'PN5ZH9'};
+const dailyCode=d=>DAILY_OVERRIDES[d]||withSeed('daily|'+d,randomCode);
 const dailyLabel=d=>{const [y,m,dd]=d.split('-').map(Number);return new Date(y,m-1,dd).toLocaleDateString(undefined,{day:'numeric',month:'long',year:'numeric'})};
 function seqFor(code){return withSeed('seq|'+code,()=>{const keys=Object.keys(ERAS),seq=[];for(let i=0;i<ERA_COUNT;i++){let k;do{k=R.pick(keys)}while(k===seq[i-1]);seq.push(k)}return seq})}
 const genEraSeeded=(run,idx)=>run.seed?withSeed(`era|${run.seed}|${idx}`,()=>genEra(run.seq[idx],idx,run)):genEra(run.seq[idx],idx,run);
