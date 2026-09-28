@@ -9,7 +9,7 @@
 /* Live site: the page itself can be cached for a while after a publish, while maps.js etc. come fresh, so an old page
    could show new data. version.txt holds the build stamp; if it differs, load the page again under a new URL.
    BUILD stays 'dev' in the project; stamp_build.py writes the stamp into dist/index.html and dist/version.txt. */
-(function(){var BUILD='20260928090257';if(BUILD==='dev'||window!==window.top||!window.fetch||location.protocol==='file:') return;
+(function(){var BUILD='20260928094209';if(BUILD==='dev'||window!==window.top||!window.fetch||location.protocol==='file:') return;
   fetch('version.txt?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.ok?r.text():''}).then(function(v){
     v=(v||'').trim();if(!v||v===BUILD) return;
     try{var k='lh-build-'+v;if(sessionStorage.getItem(k)) return;sessionStorage.setItem(k,'1')}catch(e){return}
@@ -899,7 +899,7 @@ html.desk .cinecap.sound{font-size:1.65rem}
 /* ---- clock times on cards; unwatched people are blurred until their scene is seen ---- */
 .pbadge{position:absolute;top:6px;z-index:2;background:rgba(6,5,6,.8);border:1px solid #4a4538;color:#f3ecd8;font:700 12px/1 var(--num);font-variant-numeric:lining-nums tabular-nums;padding:4px 7px;border-radius:999px;letter-spacing:.02em;pointer-events:none;transform:none;white-space:nowrap}
 .pbadge.pnum{left:6px}.pbadge.ptime{right:6px}
-.pbadge.pname{max-width:calc(100% - 62px);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;letter-spacing:0}
+.pbadge.pbname.wide{max-width:calc(100% - 12px)}.pbadge.pbname{max-width:calc(100% - 62px);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;letter-spacing:0}
 .bust,.membust,.cport,.tface,.pcard{position:relative}
 .tface .pbadge{top:4px;font-size:10px;padding:3px 5px}.tface .pbadge.pnum{left:4px}.tface .pbadge.ptime{right:4px}
 .mclock{color:#d8b86a;font-weight:700;font-family:var(--num);font-variant-numeric:lining-nums}
@@ -4414,9 +4414,9 @@ function clockText(min,long){
 }
 const sceneClock=(era,i,long)=>clockText(eraTimes(era)[i],long);
 /* portrait badges, one style everywhere: "#N" top left, and the time of their memory top right once it has been watched */
-const numBadge=f=>{const era=S.era;if(era&&era.sealed&&era.sealed[f]){const c=era.chars[era.f2c[f]];return `<span class="pbadge pnum pname" title="${esc(c.first+' '+c.sur)}">${esc(c.first+' '+c.sur)}</span>`}return `<span class="pbadge pnum">#${f+1}</span>`};   // sealed: their name
+const numBadge=f=>{const era=S.era;if(era&&era.sealed&&era.sealed[f]){const c=era.chars[era.f2c[f]];return `<span class="pbadge pnum pbname" title="${esc(c.first+' '+c.sur)}">${esc(c.first+' '+c.sur)}</span>`}return `<span class="pbadge pnum">#${f+1}</span>`};   // sealed: their name
 function timeBadge(f){const era=S.era,i=era.pos[f];return i!=null&&era.viewed.includes(i)?`<span class="pbadge ptime" title="When their memory happens">${sceneClock(era,i)}</span>`:''}
-const badges=f=>numBadge(f)+timeBadge(f);
+const badges=f=>{const t=timeBadge(f);return numBadge(f).replace('pbname"','pbname'+(t?'':' wide')+'"')+t};   // a name can use the full width when there's no time badge
 /* The Dead's order: by number (the default on entering an era) or by time. Sorting by time orders the memories you have
    watched; people whose memory you haven't seen stay at the end, by number, so sorting never reveals the timeline early. */
 const SORTS=['time-asc','time-desc','num-asc','num-desc'];
