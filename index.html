@@ -9,7 +9,7 @@
 /* Live site: the page itself can be cached for a while after a publish, while maps.js etc. come fresh, so an old page
    could show new data. version.txt holds the build stamp; if it differs, load the page again under a new URL.
    BUILD stays 'dev' in the project; stamp_build.py writes the stamp into dist/index.html and dist/version.txt. */
-(function(){var BUILD='20260928133916';if(BUILD==='dev'||window!==window.top||!window.fetch||location.protocol==='file:') return;
+(function(){var BUILD='20260928134823';if(BUILD==='dev'||window!==window.top||!window.fetch||location.protocol==='file:') return;
   fetch('version.txt?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.ok?r.text():''}).then(function(v){
     v=(v||'').trim();if(!v||v===BUILD) return;
     try{var k='lh-build-'+v;if(sessionStorage.getItem(k)) return;sessionStorage.setItem(k,'1')}catch(e){return}
@@ -988,9 +988,14 @@ html.nomotion #tipov .tiphole{animation:none}
 .setsheet{max-width:520px}.setrow{display:flex;align-items:center;justify-content:space-between;gap:14px;width:100%;text-align:left;background:rgba(255,255,255,.04);border:1px solid #3a342a;border-radius:12px;padding:10px 14px;margin:0 0 8px;color:inherit;font:inherit;cursor:pointer}
 .setrow b{display:block;font-weight:600}.setrow small{display:block;color:var(--muted);font-size:.8rem;margin-top:2px}.setval{flex:none;color:#e8c870;font-weight:600;min-width:3.2em;text-align:right}
 @media (orientation:landscape) and (max-height:540px){.setrow{padding:6px 12px;margin-bottom:6px}.setsheet .section-h{margin-bottom:6px}}
+.ntag.neg{border-style:dashed;border-color:#9a4a3e;background:#2a1512}.ntag.neg .ntt{text-decoration:none}
+.nnot.on{background:#6a2a22;border-color:#c0594a;color:#fff}
+.ptile.notp.on{background:#5a241e;border-color:#c0594a}
+.gnadd{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:6px 0 4px}.gnadd .gnsel{flex:0 1 190px;min-width:0;padding:8px 10px;border-radius:10px;background:#1b1812;color:inherit;border:1px solid #3a342a;font:inherit}
+.gnadd .gnin{flex:1 1 180px;min-width:0}.gnname{color:#e8c870;font-weight:600;margin-right:4px}
 /* typing a note on a touch screen: the box sits at the top, above the on-screen keyboard */
-html.kbtyping .cnadd{position:fixed!important;top:10px;left:12px;right:12px;z-index:400;margin:0!important;padding:10px;border-radius:14px;background:#1b1812;border:1.5px solid #d8b86a;box-shadow:0 10px 40px rgba(0,0,0,.7);display:flex;gap:8px}
-html.kbtyping .cnadd .cnin{flex:1;font-size:16px}
+html.kbtyping .cnadd,html.kbtyping .gnadd{position:fixed!important;top:10px;left:12px;right:12px;z-index:400;margin:0!important;padding:10px;border-radius:14px;background:#1b1812;border:1.5px solid #d8b86a;box-shadow:0 10px 40px rgba(0,0,0,.7);display:flex;gap:8px}
+html.kbtyping .cnadd .cnin,html.kbtyping .gnadd .cnin{flex:1;font-size:16px}
 /* ---- destination links and the map ---- */
 .dlink{display:inline;font:inherit;color:inherit;background:none;border:0;padding:0;margin:0;cursor:pointer;text-align:inherit;
   text-decoration:underline dotted rgba(216,184,106,.85);text-decoration-thickness:1.5px;text-underline-offset:3px}
@@ -4751,13 +4756,18 @@ function pickerView(){
     <div class="pbody" data-page="${kind==='cause'?'cols':'grid'}">${kind==='cause'?`<div class="pcols">${body}</div>`:body}</div></div>`;
 }
 /* ---------- player notes: tags and short notes per face, plus what relics and boons revealed ---------- */
-const TAG_KINDS={rel:'Related to',death:'Kind of death',role:'Role',home:'Homeland'},NOTE_MAX=4,NOTE_LEN=40;
-function pnote(f){const era=S.era;era.pnotes=era.pnotes||[];return era.pnotes[f]||(era.pnotes[f]={rel:[],death:[],role:[],home:[],custom:[]})}
-function tagText(k,v){const E=E_();
-  if(k==='rel') return 'Related to '+labelShort(+v);
-  if(k==='death') return esc(v==='Alive'?'Survived':v);
-  if(k==='role') return esc(roleOf(E,v).name);
-  return 'From '+esc(E.origins[+v].name)}
+const TAG_KINDS={rel:'Related to',name:'Name',death:'Kind of death',role:'Role',home:'Homeland'},NOTE_MAX=4,NOTE_LEN=40,GNOTE_MAX=20,GNOTE_LEN=80;
+function pnote(f){const era=S.era;era.pnotes=era.pnotes||[];const p=era.pnotes[f]||(era.pnotes[f]={rel:[],death:[],role:[],home:[],custom:[]});p.name=p.name||[];return p}
+/* tag values: a face number (rel), 'n'+manifest index (rel by name), a manifest index (name), an origin index (home),
+   or text (death, role). A "not" tag is the same value as a string with a leading "!". */
+const tagNeg=v=>typeof v==='string'&&v[0]==='!';
+const tagConv=(k,s)=>s[0]==='!'?s:((k==='rel'&&s[0]!=='n')||k==='home'||k==='name')?+s:s;
+function tagText(k,v){const E=E_(),era=S.era,neg=tagNeg(v),raw=neg?v.slice(1):v,N=neg?'Not ':'';
+  if(k==='rel'){const who=String(raw)[0]==='n'?esc(dispName(era,+String(raw).slice(1))):labelShort(+raw);return (neg?'Not related to ':'Related to ')+who}
+  if(k==='name') return (neg?'Not ':'Named ')+esc(dispName(era,+raw));
+  if(k==='death') return N+esc(raw==='Alive'?'Survived':raw);
+  if(k==='role') return N+esc(roleOf(E,raw).name);
+  return (neg?'Not from ':'From ')+esc(E.origins[+raw].name)}
 function relicNotes(f){
   const era=S.era,c=charOfFace(f),out=[];
   if((era.genealMarks||[]).includes(f)){const same=era.genealMarks.filter(g=>g!==f&&charOfFace(g).group===c.group);out.push(`Genealogist’s Ledger: this person has family among the dead${same.length?`, and shares it with ${same.map(g=>chip(g)).join(' ')}`:''}. Matching marks share a family.`)}
@@ -4766,9 +4776,9 @@ function relicNotes(f){
 }
 function notesBody(f,lt){
   const p=pnote(f),g=`btn ghost${lt}`;
-  const tags=Object.keys(TAG_KINDS).flatMap(k=>p[k].map(v=>`<button class="ntag t-${k}" data-act="untag" data-f="${f}" data-k="${k}" data-v="${esc(String(v))}" aria-label="Remove tag"><span class="ntt">${tagText(k,v)}</span><span aria-hidden="true">✕</span></button>`));
+  const tags=Object.keys(TAG_KINDS).flatMap(k=>p[k].map(v=>`<button class="ntag t-${k}${tagNeg(v)?' neg':''}" data-act="untag" data-f="${f}" data-k="${k}" data-v="${esc(String(v))}" aria-label="Remove tag"><span class="ntt">${tagText(k,v)}</span><span aria-hidden="true">✕</span></button>`));
   let h=`<h3 class="memh">Tags</h3>`+(tags.length?`<div class="ntags">${tags.join('')}</div>`:'')
-    +`<div class="ntagadd">${Object.entries(TAG_KINDS).map(([k,l])=>`<button class="${g}" data-act="opentag" data-k="${k}" data-f="${f}">+ ${l}</button>`).join('')}</div>`;
+    +`<div class="ntagadd"><button class="${g} nnot${ui.notesNot?' on':''}" data-act="nottoggle" aria-pressed="${!!ui.notesNot}" title="Add tags that rule something out">Not</button>${Object.entries(TAG_KINDS).map(([k,l])=>`<button class="${g}" data-act="opentag" data-k="${k}" data-f="${f}">+ ${ui.notesNot?(k==='name'?'Not named':'Not '+l.toLowerCase()):l}</button>`).join('')}</div>`;
   const rn=relicNotes(f);
   h+=`<h3 class="memh">From relics</h3>`+(rn.length?rn.map(x=>`<div class="note">${x}</div>`).join(''):`<p class="small light-muted nnone">Nothing yet.</p>`);
   h+=`<h3 class="memh">Your notes</h3>`+p.custom.map((t,i)=>`<div class="cnote"><span>${esc(t)}</span><button class="cnx" data-act="delnote" data-f="${f}" data-i="${i}" aria-label="Delete note">✕</button></div>`).join('');
@@ -4786,12 +4796,16 @@ function addNote(f,el){
 }
 /* picker for tags: choose any number, tap again to remove */
 function tagPickerView(){
-  const {tk,f}=ui.pick,era=S.era,E=E_(),p=pnote(f),on=v=>p[tk].includes(v);
-  const title={rel:'Related to…',death:'What kind of death?',role:'What was their role?',home:'Where were they from?'}[tk];
-  const tile=(v,main,extra='')=>`<button class="ptile${on(v)?' on':''}${extra}" data-act="tagged" data-v="${esc(String(v))}">${main}</button>`;
+  const {tk,f,not}=ui.pick,era=S.era,E=E_(),p=pnote(f),key=v=>not?'!'+v:v,on=v=>p[tk].includes(key(v));
+  const title=(not?{rel:'Not related to…',name:'Not named…',death:'Not this kind of death',role:'Not this role',home:'Not from…'}:{rel:'Related to…',name:'Who might they be?',death:'What kind of death?',role:'What was their role?',home:'Where were they from?'})[tk];
+  const tile=(v,main,extra='')=>`<button class="ptile${on(v)?' on':''}${not?' notp':''}${extra}" data-act="tagged" data-v="${esc(String(key(v)))}">${main}</button>`;
+  const byName=pref=>{let b='';E.tiers.forEach(([id,tname])=>{const cs=era.chars.map((c,i)=>c.tier===id&&!dispName(era,i).startsWith('[')?i:-1).filter(i=>i>=0).sort((a,b2)=>dispName(era,a).localeCompare(dispName(era,b2)));   // a torn-away name can't be told apartif(!cs.length) return;
+    b+=`<section class="psec"><h3>${esc(tname)}</h3><div class="pgridt">`+cs.map(c=>tile(pref+c,`<b>${esc(dispName(era,c))}</b>`)).join('')+`</div></section>`});return b};
   let body='';
-  if(tk==='rel') E.tiers.forEach(([id,tname])=>{const fs=[...Array(era.n).keys()].filter(g=>g!==f&&charOfFace(g).tier===id);if(!fs.length) return;
+  if(tk==='rel'){body+=`<section class="psec"><h3>By portrait</h3></section>`;E.tiers.forEach(([id,tname])=>{const fs=[...Array(era.n).keys()].filter(g=>g!==f&&charOfFace(g).tier===id);if(!fs.length) return;
     body+=`<section class="psec"><h3>${esc(tname)}</h3><div class="pgridt">`+fs.map(g=>tile(g,`${thumb(g,34)}<b>${labelHTML(g)}</b>`,' ftile')).join('')+`</div></section>`});
+    body+=`<section class="psec"><h3>By name, from the manifest</h3></section>`+byName('n')}
+  else if(tk==='name') body=byName('');
   else if(tk==='death'){const groups=[...new Set(E.causes.filter(x=>!x.hidden||era.deathCause.includes(x.id)).map(x=>x.g))];
     body=`<section class="psec"><div class="pgridt">`+groups.map(gp=>tile(gp,`<b>${esc(gp==='Alive'?'Survived':gp)}</b>`)).join('')+`</div></section>`}
   else if(tk==='role') E.tiers.forEach(([id,tname])=>{const rs=E.roles.filter(r=>r.tier===id);if(!rs.length) return;
@@ -4900,9 +4914,17 @@ function satchelView(){
   if(waiting.length) h+=`<p class="small muted">Waiting for the next era: ${waiting.join(', ')}.</p>`;
   return h;
 }
+function recordsNotes(){
+  const era=S.era,E=E_(),notes=era.gnotes=era.gnotes||[];
+  const opts=E.tiers.flatMap(([id,tname])=>{const cs=era.chars.map((c,i)=>c.tier===id&&!dispName(era,i).startsWith('[')?i:-1).filter(i=>i>=0).sort((a,b)=>dispName(era,a).localeCompare(dispName(era,b)));
+    return cs.length?[`<optgroup label="${esc(tname)}">`+cs.map(c=>`<option value="${c}"${ui.gDraft&&ui.gDraft.c===String(c)?' selected':''}>${esc(dispName(era,c))}</option>`).join('')+`</optgroup>`]:[]}).join('');
+  let h=`<h2 class="section-h">Notes</h2>`+notes.map((n,i)=>`<div class="cnote"><span>${n.c!=null?`<b class="gnname">${esc(dispName(era,n.c))}</b> `:''}${esc(n.t)}</span><button class="cnx" data-act="gnotedel" data-i="${i}" aria-label="Delete note">✕</button></div>`).join('');
+  if(notes.length<GNOTE_MAX) h+=`<form class="gnadd"><select class="gnsel" aria-label="Tag a name (optional)"><option value="">No name</option>${opts}</select><input class="cnin gnin" maxlength="${GNOTE_LEN}" placeholder="A note…" enterkeyhint="done" autocomplete="off" value="${esc(ui.gDraft?ui.gDraft.v:'')}"><button type="submit" class="btn ghost cnbtn">Add</button></form>`;
+  return h;
+}
 function recordsView(){
   const run=S.run,era=S.era,E=E_();
-  let h=`<h2 class="section-h" style="margin-top:0">Where and when</h2><div class="note whenwhere"><b>${esc(E.title)}</b><br>${esc(E.when)}${eraClock(era)?` · ${esc(eraClock(era).date)}`:''}</div>`;
+  let h=`<h2 class="section-h" style="margin-top:0">Where and when</h2><div class="note whenwhere"><b>${esc(E.title)}</b><br>${esc(E.when)}${eraClock(era)?` · ${esc(eraClock(era).date)}`:''}</div>`+recordsNotes();
   if(era.findings&&era.findings.length) h+=`<h2 class="section-h">Findings</h2>`+era.findings.map(t=>`<div class="note">${fillTokens(t)}</div>`).join('');
   if(run.relics.includes('tree')){const c2f=[];era.f2c.forEach((c,f)=>c2f[c]=f);h+=`<h2 class="section-h">Family Tree</h2>`+era.kin.map(k=>{const a=c2f[k.a],b2=c2f[k.b];const w=k.type==='spouse'?'married to':k.type==='sibling'?'sibling of':'parent of';return `<div class="note">${chip(a)} ${w} ${chip(b2)}</div>`}).join('')}
   h+=`<h2 class="section-h">The road</h2>${road()}<div class="stack" style="margin-top:8px"><button class="btn ghost" data-act="settings">Settings</button><button class="btn ghost debug" data-act="debugall">Debug: fill in every open answer</button><button class="btn ghost" data-act="abandon">Abandon this run</button></div>`;
@@ -5159,12 +5181,14 @@ document.addEventListener('click',e=>{
     case 'home':clearSave();S=null;render();break;
     case 'rules':ui.modal={kind:'rules'};render();break;
     case 'sheettab':ui.sheet.t=b.dataset.t;render();break;
-    case 'opentag':ui.pick={kind:'tag',tk:b.dataset.k,f:+b.dataset.f};render();break;
-    case 'tagged':{const {tk,f}=ui.pick,p=pnote(f),v=tk==='rel'||tk==='home'?+b.dataset.v:b.dataset.v,i=p[tk].indexOf(v);
+    case 'opentag':ui.pick={kind:'tag',tk:b.dataset.k,f:+b.dataset.f,not:!!ui.notesNot};render();break;
+    case 'nottoggle':ui.notesNot=!ui.notesNot;render();break;
+    case 'gnotedel':S.era.gnotes.splice(+b.dataset.i,1);save();render();break;
+    case 'tagged':{const {tk,f}=ui.pick,p=pnote(f),v=tagConv(tk,b.dataset.v),i=p[tk].indexOf(v);
       if(i>=0) p[tk].splice(i,1);else p[tk].push(v);
       const tr=document.querySelector('.picker .ptrack')||document.querySelector('.picker .pbody'),sl=tr?tr.scrollLeft:0,st=tr?tr.scrollTop:0;save();render();
       const t2=document.querySelector('.picker .ptrack')||document.querySelector('.picker .pbody');if(t2){t2.scrollLeft=sl;t2.scrollTop=st}break}
-    case 'untag':{const p=pnote(+b.dataset.f),k=b.dataset.k,v=k==='rel'||k==='home'?+b.dataset.v:b.dataset.v,i=p[k].indexOf(v);if(i>=0) p[k].splice(i,1);save();render();break}
+    case 'untag':{const p=pnote(+b.dataset.f),k=b.dataset.k,v=tagConv(k,b.dataset.v),i=p[k].indexOf(v);if(i>=0) p[k].splice(i,1);save();render();break}
     case 'addnote':addNote(+b.dataset.f);break;
     case 'delnote':pnote(+b.dataset.f).custom.splice(+b.dataset.i,1);save();render();break;
     case 'memtab':ui.memTab=b.dataset.t;render();{const el=document.querySelector('.mtab.on');if(el) el.scrollTop=0}break;
@@ -5240,7 +5264,11 @@ const KB_TOUCH=matchMedia('(pointer:coarse)').matches||(navigator.maxTouchPoints
 function kbCheck(){const a=document.activeElement;document.documentElement.classList.toggle('kbtyping',KB_TOUCH&&!!(a&&a.classList&&a.classList.contains('cnin')))}
 document.addEventListener('focusin',kbCheck);document.addEventListener('focusout',()=>setTimeout(kbCheck,0));
 document.addEventListener('submit',e=>{const fm=e.target.closest('.cnadd');if(!fm) return;e.preventDefault();addNote(+fm.dataset.f,fm.querySelector('.cnin'))});
-document.addEventListener('input',e=>{if(e.target.matches('.cnin')) ui.noteDraft={f:+e.target.dataset.f,v:e.target.value}});
+document.addEventListener('input',e=>{if(e.target.matches('.gnin')){const fm=e.target.closest('.gnadd');ui.gDraft={v:e.target.value,c:fm?fm.querySelector('.gnsel').value:''};return}if(e.target.matches('.cnin')) ui.noteDraft={f:+e.target.dataset.f,v:e.target.value}});
+document.addEventListener('change',e=>{if(e.target.matches('.gnsel')){const fm=e.target.closest('.gnadd');ui.gDraft={v:fm?fm.querySelector('.gnin').value:'',c:e.target.value}}});
+document.addEventListener('submit',e=>{const fm=e.target.closest('.gnadd');if(!fm) return;e.preventDefault();
+  const t=fm.querySelector('.gnin').value.trim().slice(0,GNOTE_LEN),c=fm.querySelector('.gnsel').value;if(!t) return;
+  const notes=S.era.gnotes=S.era.gnotes||[];if(notes.length>=GNOTE_MAX) return;notes.push({c:c===''?null:+c,t});ui.gDraft=null;save();render()});
 // pressing Add must not blur the box first: on phones that closes the keyboard, the layout jumps and the tap misses the button
 document.addEventListener('pointerdown',e=>{if(e.target.closest('.cnbtn')&&document.activeElement&&document.activeElement.matches('.cnin')) e.preventDefault()});
 /* boot */
