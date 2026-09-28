@@ -973,7 +973,8 @@ html.nomotion #tipov .tiphole{animation:none}
 .dmap .herelbl{font:700 22px Georgia,serif;fill:#fff5e0;paint-order:stroke;stroke:#14222a;stroke-width:5px}
 .dmap .star{fill:#f0c850;stroke:#5a3c10;stroke-width:2.5;stroke-linejoin:round}
 .mapsheet .close-row{margin-top:10px!important}
-@media (orientation:landscape) and (max-height:540px){.sheet.mapsheet{width:auto;max-width:none;height:94dvh;display:flex;flex-direction:column;align-items:center}.mapsheet .dmap{height:calc(94dvh - 70px);width:auto;aspect-ratio:4/3}}
+@media (orientation:landscape) and (max-height:540px){.sheet.mapsheet{width:auto;max-width:none;height:auto;padding:0;background:none;box-shadow:none;border:0;display:flex;align-items:center;justify-content:center}.mapsheet .dmap{height:calc(100dvh - 16px);width:auto;aspect-ratio:4/3;border-radius:12px}.mapsheet .close-row{display:none}}
+.mapsheet{cursor:pointer}
 html.desk .sheet.mapsheet{width:auto;max-width:none}html.desk .mapsheet .dmap{height:min(680px,78vh);width:auto;aspect-ratio:4/3}
 .lshort{display:none}
 /* phones held sideways: short labels so the four memory buttons always fit (narrow screens like a Fold), and no ✕ (Back to the dead does it) */
@@ -1088,7 +1089,7 @@ html.nomotion .cports .cport,html.nomotion .cports .cfull img,html.nomotion .cin
 <div id="rotate" aria-hidden="true"><div><div class="rotphone"></div><p>Turn your phone sideways to play</p></div></div>
 <script src="pieces.js?v=4c6edf9d"></script>
 <script src="stacker.js?v=4c6edf9d"></script>
-<script src="maps.js?v=25ef1c17"></script>
+<script src="maps.js?v=3f199ef6"></script>
 <script src="relic_icons.js?v=d9b589be"></script>
 <script>
 
@@ -1414,7 +1415,7 @@ const ERA_CFG={
   villa:{
     causes:['burned','crush_stones','clawed','eaten','torn','spiked','sword','knifed','clubbed','decap','speared','strangled','drowned','fell_stairs','poisoned','illness','expired','exploded','sui_knife','sui_spear'],
     items:{sword:'gladius',knifed:'dagger',decap:'gladius'},beasts:{clawed:'lion',eaten:'lion',torn:'lion',spiked:'bull'},
-    alive:['Rome','Neapolis','Misenum','Alexandria','Athens'],
+    alive:['Rome','Naples','Miseno','Alexandria','Athens'],
     ambient:['A deep rumble rolls down from the mountain.','Ash hisses on the roof tiles.','Beasts roar in the arena cages.','The sea draws back with a roar.','Pumice rattles like hail.'],
     say:['Help me! Gods, help me!','Juno protect us…','Get away from me!','To the boats! Run!','The sky is burning!'],
     call:['Run!','Get to the boats!','Behind you!','Take my hand!'],
@@ -1839,8 +1840,8 @@ const DEST_HINTS={
     'Boston':{say:['Beacon Hill. My aunt will hide me.','The rescue ship makes for Massachusetts.','Into the harbour where they dumped the tea, and then I vanish.'],obj:['a card for a boarding house on Beacon Hill','a Massachusetts railroad timetable']}},
   villa:{
     'Rome':{say:['Up the Appian Way to the city of seven hills.','The Emperor must hear of this.','To the Forum, to my patron.'],obj:['a letter sealed for a senator on the Palatine','a milestone map of the Via Appia']},
-    'Neapolis':{say:['Across the bay to the Greek city.','The theatre city across the water will take us.','Parthenope’s harbour is just across the bay.'],obj:['a theatre token from the Greek city across the bay','a Greek letter addressed across the bay']},
-    'Misenum':{say:['To the fleet! The admiral’s galleys are coming!','The navy’s harbour at the cape.','The warships at the headland will carry us.'],obj:['a token of the imperial fleet','an oar branded with the fleet’s eagle']},
+    'Naples':{say:['Across the bay to the Greek city.','The theatre city across the water will take us.','Parthenope’s harbour is just across the bay.'],obj:['a theatre token from the Greek city across the bay','a Greek letter addressed across the bay']},
+    'Miseno':{say:['To the fleet! The admiral’s galleys are coming!','The navy’s harbour at the cape.','The warships at the headland will carry us.'],obj:['a token of the imperial fleet','an oar branded with the fleet’s eagle']},
     'Alexandria':{say:['A grain ship to Egypt leaves tonight.','I’ll see the Pharos light before the month is out.','Home to the Nile.'],obj:['a papyrus pass for the grain fleet','a scarab amulet and a ship’s token for Egypt']},
     'Athens':{say:['To the Piraeus, and up to the Acropolis.','Athena’s city will take me in.','Home to the schools of the philosophers.'],obj:['a token stamped with Athena’s owl','a letter addressed to a school in the Agora']}}
 };
@@ -4591,14 +4592,15 @@ function modalView(){
   if(m.kind==='map'){const era=S.era,mp=window.LH_MAPS&&LH_MAPS[era.key]&&LH_MAPS[era.key][m.d];
     if(!mp) return `<div class="scrim center-modal" data-act="closemodal"><div class="sheet"><p>The map isn’t available.</p><div class="close-row"><button class="btn primary" data-act="closemodal">Close</button></div></div></div>`;
     const [fx,fy]=mp.from,[tx,ty]=mp.to,mx=(fx+tx)/2,my=(fy+ty)/2,dx=tx-fx,dy=ty-fy,bend=.18,cx=mx-dy*bend,cy=my+dx*bend;   // a gentle curve, like a route on an old chart
+    const dist=Math.hypot(tx-fx,ty-fy),near=dist<90,SR=dist<40?11:near?14:20,HR=dist<40?5:near?7:9;
     const star=(x,y,r)=>{let d='';for(let i=0;i<10;i++){const a=-Math.PI/2+i*Math.PI/5,rr=i%2?r*.45:r;d+=(i?'L':'M')+(x+rr*Math.cos(a)).toFixed(1)+' '+(y+rr*Math.sin(a)).toFixed(1)}return d+'Z'};
-    return `<div class="scrim center-modal" data-act="closemodal"><div class="sheet mapsheet" role="dialog" aria-label="Map">
+    return `<div class="scrim center-modal" data-act="closemodal"><div class="sheet mapsheet" role="dialog" aria-label="Map (tap to close)" data-act="closemodal">
       <svg class="dmap" viewBox="0 0 800 600" role="img" aria-label="A map with the way they were headed">
         <rect width="800" height="600" class="sea"/><path d="${mp.path}" class="land"/>
         <path d="M${fx} ${fy}Q${cx.toFixed(1)} ${cy.toFixed(1)} ${tx} ${ty}" class="route"/>
-        <circle cx="${fx}" cy="${fy}" r="9" class="here"/><circle cx="${fx}" cy="${fy}" r="16" class="herering"/>
+        <circle cx="${fx}" cy="${fy}" r="${HR}" class="here"/><circle cx="${fx}" cy="${fy}" r="${HR+7}" class="herering"/>
         <text x="${fx+(fx>620?-20:20)}" y="${fy+(fy<60?28:-16)}" class="herelbl" text-anchor="${fx>620?'end':'start'}">You are here</text>
-        <path d="${star(tx,ty,20)}" class="star"/>
+        <path d="${star(tx,ty,SR)}" class="star"/>
       </svg>
       <div class="close-row"><button class="btn primary" data-act="closemodal">Close</button></div></div></div>`}
   if(m.kind==='reveal'){const r=REW[m.id];return `<div class="scrim center-modal" data-act="closemodal"><div class="sheet reveal" role="alertdialog">
