@@ -9,7 +9,7 @@
 /* Live site: the page itself can be cached for a while after a publish, while maps.js etc. come fresh, so an old page
    could show new data. version.txt holds the build stamp; if it differs, load the page again under a new URL.
    BUILD stays 'dev' in the project; stamp_build.py writes the stamp into dist/index.html and dist/version.txt. */
-(function(){var BUILD='20260927231326';if(BUILD==='dev'||window!==window.top||!window.fetch||location.protocol==='file:') return;
+(function(){var BUILD='20260927233021';if(BUILD==='dev'||window!==window.top||!window.fetch||location.protocol==='file:') return;
   fetch('version.txt?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.ok?r.text():''}).then(function(v){
     v=(v||'').trim();if(!v||v===BUILD) return;
     try{var k='lh-build-'+v;if(sessionStorage.getItem(k)) return;sessionStorage.setItem(k,'1')}catch(e){return}
@@ -1101,7 +1101,7 @@ html.nomotion .cports .cport,html.nomotion .cports .cfull img,html.nomotion .cin
 <script src="pieces.js?v=4c6edf9d"></script>
 <script src="stacker.js?v=4c6edf9d"></script>
 <script src="maps.js?v=50a871d3"></script>
-<script src="relic_icons.js?v=cf29987f"></script>
+<script src="relic_icons.js?v=9c43f9ce"></script>
 <script>
 
 /* ---------- utilities ---------- */
@@ -1493,12 +1493,11 @@ REWARDS.length=0;Object.keys(REW).forEach(k=>delete REW[k]);
   {id:'customs',name:'Customs Seal',rar:'c',kind:'charge',uses:1,tags:['x1','Homeland'],desc:'Restore one torn or smudged homeland on the manifest.'},
   // rare
   {id:'steady',name:'Steady Hand',rar:'r',kind:'charge',uses:1,expires:'era',tags:['x1','This era','Safety'],desc:'Your next failed consultation this era costs no heart. Lost when the era ends.'},
-  {id:'wax',name:'Wax Seal',rar:'r',kind:'next',tags:['Next era','Role'],desc:'The next era includes the quarters register: where everyone slept. Staff slept by their work, so a key hints at a job.'},
+  {id:'wax',name:'Wax Seal',rar:'r',kind:'relic',tags:['Permanent','Role'],desc:'The quarters register, starting now and in every era after: where everyone slept. Staff slept by their work, so a key hints at a job.'},
   {id:'primer',name:'Interpreter’s Ear',rar:'r',kind:'relic',perEra:1,tags:['Permanent','1 per era','Homeland'],desc:'Once per era, place a chosen person’s accent: learn their homeland.'},
   {id:'satchel',name:'Physician’s Satchel',rar:'r',kind:'charge',uses:2,tags:['x2','Death'],desc:'Twice, learn the broad cause of a chosen person’s death: a blade, something heavy, a fall, water or cold…'},
   {id:'lens',name:'Magnifying Lens',rar:'r',kind:'charge',uses:2,tags:['x2','Clue'],desc:'Twice, choose someone’s memory and uncover one extra hidden detail in it.'},
   {id:'tattoo',name:'Tattooist’s Eye',rar:'r',kind:'relic',perEra:2,tags:['Permanent','2 per era','Relationship'],desc:'Twice per era, learn whether a chosen person has family among the dead.'},
-  {id:'carto',name:'Cartographer’s Kit',rar:'r',kind:'relic',tags:['Permanent','Role'],desc:'Every future era includes the quarters register: where everyone slept. Staff slept by their work, so a key hints at a job.'},
   {id:'nav',name:'Navigator',rar:'r',kind:'relic',tags:['Permanent','Death'],desc:'Unlocks the traveller’s map for the rest of the run: tap a place a survivor mentions to see where they were headed.'},
   {id:'herald',name:'Seal of the House',rar:'r',kind:'relic',perEra:1,tags:['Permanent','1 per era','Name'],desc:'Once per era, choose a person and learn their surname.'},
   {id:'interro',name:'Interrogator',rar:'r',kind:'relic',perEra:1,tags:['Permanent','1 per era','Name'],desc:'Once per era, ask whether a person bears the name you gave them.'},
@@ -3767,7 +3766,7 @@ function genEra(key,idx,run){
   const rec={role:chars.map((c,i)=>hideR?!hideR.has(i):(c.fam==='head'||!R.chance(pR))),origin:chars.map(()=>!R.chance(pO))};
   // where the register and the traveller's map came from, for the era intro: relics first, then one lucky find (35%)
   // that gives whichever of the two isn't already guaranteed
-  let quartersSrc=has('carto')?'carto':wax?'wax':null,mapSrc=has('nav')?'nav':null;
+  let quartersSrc=has('wax')?'wax':has('carto')?'carto':wax?'wax':null,mapSrc=has('nav')?'nav':null;
   if(R.chance(.35)){const opts=[!quartersSrc&&'q',!mapSrc&&'m'].filter(Boolean);if(opts.length){if(R.pick(opts)==='q') quartersSrc='luck';else mapSrc='luck'}}
   const quartersDoc=!!quartersSrc;
   const f2c=R.shuffle([...Array(n).keys()]);
@@ -3886,6 +3885,8 @@ function load(){try{const v=localStorage.getItem(KEY);return v?migrateSave(JSON.
 /* saves from before the relic rework: passive Lens/Satchel become charges, removed relics are dropped */
 function migrateSave(sv){
   const run=sv&&sv.run;if(!run) return sv;run.charges=run.charges||{};
+  run.relics=(run.relics||[]).map(id=>id==='carto'?'wax':id);if(run.next&&run.next.wax){delete run.next.wax;run.relics.push('wax')}
+  run.relics=[...new Set(run.relics)];
   const toCharges={lens:2,satchel:2};
   run.relics=(run.relics||[]).filter(id=>{
     if(toCharges[id]){run.charges[id]=(run.charges[id]||0)+toCharges[id];return false}
@@ -4002,7 +4003,7 @@ function makeOffer(opt={}){
   const run=S.run,cnt=S.era&&S.era.gambler?4:3;   // Gambler's Coin: four choices for every offer in that era
   const legOdds=run.relics.includes('blind')?.10:.05;
   const usable=r=>(r.kind==='charge'&&!['steady','slate'].includes(r.id))||!!r.perEra;   // relics with a Use button
-  const avail=REWARDS.filter(r=>!(run.tutorial&&r.id==='blind')&&!(run.tutorial&&opt.start&&!usable(r))&&!(r.kind==='relic'&&run.relics.includes(r.id))&&!(opt.noInstant&&r.kind==='instant')&&!(r.id==='wax'&&run.relics.includes('carto'))&&!(r.id==='nav'&&S.era&&mapOn(S.era))),out=[];let g=0;
+  const avail=REWARDS.filter(r=>!(run.tutorial&&r.id==='blind')&&!(run.tutorial&&opt.start&&!usable(r))&&!(r.kind==='relic'&&run.relics.includes(r.id))&&!(opt.noInstant&&r.kind==='instant')),out=[];let g=0;
   while(out.length<cnt&&g++<400){const roll=Math.random(),rar=roll<legOdds?'l':roll<legOdds+.25?'r':'c';const pool=avail.filter(r=>r.rar===rar&&!out.includes(r.id));if(pool.length) out.push(R.pick(pool).id)}
   const lasting=id=>['relic','next','geneal'].includes(REW[id].kind);
   if(!out.some(lasting)&&!(run.tutorial&&opt.start)){const pool=avail.filter(r=>lasting(r.id)&&r.rar!=='l'&&!out.includes(r.id));if(pool.length) out[R.int(0,out.length-1)]=R.pick(pool).id}
@@ -4033,6 +4034,12 @@ function extraDetail(era,E,s,keyOnly){
   return null;
 }
 /* a next-era relic taken during the last era works at once */
+function applyWaxNow(era,E){
+  if(era.quartersDoc) return false;
+  era.quartersDoc=true;era.quartersSrc='wax';
+  R.shuffle(era.scenes.slice()).slice(0,Math.ceil(era.scenes.length/2)).forEach(s=>{const t=extraDetail(era,E,s,true);if(t) (s.extra=s.extra||[]).push({src:'Wax Seal',t})});
+  return true;
+}
 function applyNextNow(id){
   const era=S.era,E=E_();
   if(id==='wax'){
@@ -4063,6 +4070,7 @@ function applyReward(id){
   }
   if(id==='tally'){const cnt={};for(let f=0;f<era.n;f++){const g=causeOf(E,era.deathCause[f]).g;cnt[g]=(cnt[g]||0)+1}era.findings.push('Tally Sheet: '+Object.entries(cnt).sort((a,b)=>b[1]-a[1]).map(([g,n])=>`${g==='Alive'?'Survived':g} ×${n}`).join(', ')+'.')}
   if(id==='blind'&&now) run.charges.glimpse=(run.charges.glimpse||0)+1;
+  if(id==='wax'&&era&&now&&applyWaxNow(era,E)) toast('The Wax Seal: the quarters register is in the Manifest, and keys turn up in memories.');
   if(id==='nav'&&era&&!era.mapSrc){era.mapSrc='nav';toast('The Navigator: tap a place a survivor mentions in a memory to see it on the map.')}
 }
 function takeReward(id){
