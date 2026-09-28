@@ -9,7 +9,7 @@
 /* Live site: the page itself can be cached for a while after a publish, while maps.js etc. come fresh, so an old page
    could show new data. version.txt holds the build stamp; if it differs, load the page again under a new URL.
    BUILD stays 'dev' in the project; stamp_build.py writes the stamp into dist/index.html and dist/version.txt. */
-(function(){var BUILD='20260928083840';if(BUILD==='dev'||window!==window.top||!window.fetch||location.protocol==='file:') return;
+(function(){var BUILD='20260928084417';if(BUILD==='dev'||window!==window.top||!window.fetch||location.protocol==='file:') return;
   fetch('version.txt?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.ok?r.text():''}).then(function(v){
     v=(v||'').trim();if(!v||v===BUILD) return;
     try{var k='lh-build-'+v;if(sessionStorage.getItem(k)) return;sessionStorage.setItem(k,'1')}catch(e){return}
@@ -40,7 +40,13 @@
   var isSmall=function(){return Math.min(window.innerWidth,window.innerHeight)<=540||(window.innerWidth<window.innerHeight&&window.innerWidth<=600)};
   // folding or unfolding a phone crosses between the phone page and the big-screen frame: reload once to switch (the game is saved)
   var typing=function(){try{var a=document.activeElement;if(a&&a.tagName==='IFRAME'&&a.contentDocument) a=a.contentDocument.activeElement;return !!(a&&/^(INPUT|TEXTAREA)$/.test(a.tagName))}catch(e){return false}};   // the on-screen keyboard shrinks the page
-  var watch=function(wasSmall){var t=0;window.addEventListener('resize',function(){clearTimeout(t);t=setTimeout(function(){if(isSmall()!==wasSmall&&!typing()) location.reload()},600)})};
+  // on touch screens only a real fold/unfold counts: the screen itself changes size. Rotating, or going full screen, only
+  // swaps or trims the window, and reloading then would drop full screen (and loop back to the full-screen button)
+  var scrMin=function(){return Math.min(screen.width||0,screen.height||0)};
+  var watch=function(wasSmall){var t=0,s0=scrMin();window.addEventListener('resize',function(){clearTimeout(t);t=setTimeout(function(){
+    if(typing()||isSmall()===wasSmall) return;
+    if(touch&&Math.abs(scrMin()-s0)<60) return;
+    location.reload()},800)})};
   if(isSmall()){watch(true);return}                   // phones and small windows use the page directly
   watch(false);
   // big touch screens (an unfolded foldable, a tablet) get the phone layout, scaled up; mouse screens get the desktop layout
@@ -50,9 +56,14 @@
     '#stage{position:fixed;left:0;top:0;border:0;display:block;background:#0e0d0b;transform-origin:0 0}'+
     '#tabgate{display:none;position:fixed;inset:0;z-index:5;background:#0d0c0a;color:#ece4cf;align-items:center;justify-content:center;text-align:center;font-family:Georgia,serif}'+
     '#tabgate.on{display:flex}#tabgate p{font-size:2rem;margin:0 0 18px}#tabgate button{font:600 1.2rem Georgia,serif;padding:14px 34px;border-radius:999px;border:0;background:#6fb3a1;color:#0d1311}'+
-    '#tabgate small{display:block;color:#8d8570;margin-top:14px;font-size:.95rem}</style>'+
+    '#tabgate small{display:block;color:#8d8570;margin-top:14px;font-size:.95rem}'+
+    '#lhrot{display:none;position:fixed;inset:0;z-index:6;background:#0d0c0a;color:#ece4cf;align-items:center;justify-content:center;text-align:center;font:1.5rem Georgia,serif}'+
+    '@media (orientation:portrait){#lhrot{display:flex}}'+
+    '#lhrot i{display:block;width:56px;height:94px;border:3px solid #ece4cf;border-radius:11px;margin:0 auto 20px;animation:lhrot 2.4s ease-in-out infinite}'+
+    '@keyframes lhrot{0%,25%{transform:rotate(0)}55%,100%{transform:rotate(-90deg)}}</style>'+
     '<iframe id="stage" title="The Last Hour" allow="fullscreen" src="'+src.replace(/"/g,'&quot;')+'"></iframe>'+
-    (TAB?'<div id="tabgate"><div><p>The Last Hour</p><button id="tabfs">Play in full screen</button><small>Best played sideways, in full screen.</small></div></div>':''));
+    (TAB?'<div id="tabgate"><div><p>The Last Hour</p><button id="tabfs">Play in full screen</button><small>Best played sideways, in full screen.</small></div></div>'+
+      '<div id="lhrot" aria-hidden="true"><div><i></i>Turn your device sideways to play</div></div>':''));
   function fit(){
     var f=document.getElementById('stage');if(!f) return;
     // while someone types in the game (a note), the on-screen keyboard shrinks the page: don't refit under them
