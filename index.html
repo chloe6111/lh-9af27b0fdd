@@ -9,7 +9,7 @@
 /* Live site: the page itself can be cached for a while after a publish, while maps.js etc. come fresh, so an old page
    could show new data. version.txt holds the build stamp; if it differs, load the page again under a new URL.
    BUILD stays 'dev' in the project; stamp_build.py writes the stamp into dist/index.html and dist/version.txt. */
-(function(){var BUILD='20260928094506';if(BUILD==='dev'||window!==window.top||!window.fetch||location.protocol==='file:') return;
+(function(){var BUILD='20260928095244';if(BUILD==='dev'||window!==window.top||!window.fetch||location.protocol==='file:') return;
   fetch('version.txt?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.ok?r.text():''}).then(function(v){
     v=(v||'').trim();if(!v||v===BUILD) return;
     try{var k='lh-build-'+v;if(sessionStorage.getItem(k)) return;sessionStorage.setItem(k,'1')}catch(e){return}
@@ -983,6 +983,8 @@ html.nomotion #tipov .tiphole{animation:none}
   .cine .cports.n2 .cfull{height:calc((100dvh - var(--topH) - 18px) * .86)!important;width:calc((100dvh - var(--topH) - 18px) * .86 * .46)!important}
   .cinecap,.cinetitle{max-width:none!important;min-width:0}
 }
+.btn.seal.heard{opacity:.5;filter:saturate(.5)}
+.qrow{display:block}.qrow .qnames{color:var(--muted);font-size:.9em;margin-top:2px;line-height:1.35}
 /* typing a note on a touch screen: the box sits at the top, above the on-screen keyboard */
 html.kbtyping .cnadd{position:fixed!important;top:10px;left:12px;right:12px;z-index:400;margin:0!important;padding:10px;border-radius:14px;background:#1b1812;border:1.5px solid #d8b86a;box-shadow:0 10px 40px rgba(0,0,0,.7);display:flex;gap:8px}
 html.kbtyping .cnadd .cnin{flex:1;font-size:16px}
@@ -3993,8 +3995,12 @@ window.addEventListener('resize',()=>fitAscii());
 if(document.fonts&&document.fonts.ready) document.fonts.ready.then(()=>fitAscii());
 /* ---------- actions ---------- */
 function toast(t){ui.toast=t;render();clearTimeout(toast.t);toast.t=setTimeout(()=>{ui.toast=null;render()},2600)}
+/* the open answers as they stand: after a failed consultation, the Ledger won't hear the same answers again */
+const answerSig=era=>openFaces().map(f=>{const a=era.assign[f]||{};return [f,a.c,a.cause,a.k].join(':')}).join('|');
+const sameAsFailed=era=>!!era.failSig&&era.failSig===answerSig(era);
 function consult(){
   const era=S.era,run=S.run,open=openFaces();
+  if(sameAsFailed(era)){toast('The Ledger has already heard these answers. Change at least one before consulting again.');return}
   const allRight=open.filter(isRight),need=Math.min(2,open.length);
   if(allRight.length>=need){
     const right=allRight.slice(0,2);right.forEach(f=>era.sealed[f]=true);run.sealed+=right.length;ui.fresh=right;
@@ -4007,8 +4013,9 @@ function consult(){
     run.consults=(run.consults||0)+1;if(run.relics.includes('fate')&&run.consults%3===0){run.charges.glimpse=(run.charges.glimpse||0)+1;body+=' Fateweaver grants you a Glimpse.'}
     if(cleared){Object.keys(run.charges).forEach(k=>{if(REW[k]&&REW[k].expires==='era') delete run.charges[k]});run.relics=run.relics.filter(k=>!(REW[k]&&REW[k].expires==='era'));S.screen='cleared';ui.sheet=null;ui.mem=null;ui.modal={kind:'msg',title:'The Ledger accepts',body};save();render();window.scrollTo(0,0);return}
     ui.modal={kind:'msg',title:'The Ledger accepts',body};
-  } else if(run.charges.steady){run.charges.steady--;ui.modal={kind:'msg',title:'The Ledger is silent',body:`Fewer than ${need} of your open answers are fully right. Steady Hand spares your heart.`}}
+  } else if(run.charges.steady){era.failSig=answerSig(era);run.charges.steady--;ui.modal={kind:'msg',title:'The Ledger is silent',body:`Fewer than ${need} of your open answers are fully right. Steady Hand spares your heart.`}}
   else{
+    era.failSig=answerSig(era);
     run.hearts--;run.fails++;era.fails++;
     if(run.hearts<=0){
       if(run.relics.includes('anchor')&&!run.anchorUsed){run.anchorUsed=true;run.hearts=3;ui.modal={kind:'msg',title:'The Time Anchor holds',body:'Your hearts ran out, but the Anchor pulls you back with three.'}}
@@ -4384,10 +4391,10 @@ function playScreen(){
     satchel:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 9h14l-1.2 11H6.2z"/><path d="M9 9V7a3 3 0 0 1 6 0v2"/><path d="M5 13h14"/></svg>`,
     records:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3l2.5 5.5L20 9l-4 4 1 6-5-3-5 3 1-6-4-4 5.5-.5z"/></svg>`};
   return `<header class="top"><div class="wrap"><div class="era"><b>${esc(E.title)}</b><span>Era ${run.idx+1} of ${ERA_COUNT} · ${era.sealed.filter(Boolean).length} of ${era.n} sealed</span></div>${hearts()}
-    <div class="topact">${DESK&&ui.tab==='gather'?'<button class="btn ghost tbtn dbgtwo" data-act="debugtwo" title="Debug: fill in two correct answers">Debug: solve 2</button>':''}<button class="btn ghost tbtn sortbtn" data-act="sortcycle" title="Change the order of The Dead">Sort: ${SORT_LABEL[ui.sort||'num-asc']}</button><span class="tprog"><b>${filled}</b>/${open.length}<span class="tlong"> answered</span></span>${SHOW_CHART?'<button class="btn ghost tbtn" data-act="chart">Hierarchy</button>':''}<button class="btn seal tbtn" data-act="consult" ${filled<need?'disabled':''}>Consult<span class="tlong"> the Ledger</span></button></div></div></header>
+    <div class="topact">${DESK&&ui.tab==='gather'?'<button class="btn ghost tbtn dbgtwo" data-act="debugtwo" title="Debug: fill in two correct answers">Debug: solve 2</button>':''}<button class="btn ghost tbtn sortbtn" data-act="sortcycle" title="Change the order of The Dead">Sort: ${SORT_LABEL[ui.sort||'num-asc']}</button><span class="tprog"><b>${filled}</b>/${open.length}<span class="tlong"> answered</span></span>${SHOW_CHART?'<button class="btn ghost tbtn" data-act="chart">Hierarchy</button>':''}<button class="btn seal tbtn${sameAsFailed(S.era)?' heard':''}" data-act="consult" ${filled<need?'disabled':''}>Consult<span class="tlong"> the Ledger</span></button></div></div></header>
   <main><div class="wrap">${body}</div></main>
   <div class="dock"><div class="actionbar"><div class="wrap"><div class="prog"><b>${filled}</b> of ${open.length} open fates answered<br><span class="small">${need<2?'The last one must be right':'2 right answers seal them'}</span></div>
-  <button class="btn seal" data-act="consult" ${filled<need?'disabled':''}>Consult the Ledger</button></div></div>
+  <button class="btn seal${sameAsFailed(S.era)?' heard':''}" data-act="consult" ${filled<need?'disabled':''}>Consult the Ledger</button></div></div>
   <nav class="tabs">${tab('gather','The Dead',I.gather)}${tab('manifest','Manifest',I.manifest)}${tab('satchel','Satchel',I.satchel)}${tab('records','Records',I.records)}</nav></div>`;
 }
 /* ---------- the clock: each memory happens at a real time of night ----------
@@ -4616,7 +4623,7 @@ function manifestInner(){
   });
   if(era.quartersDoc){
     const byQ={};era.chars.forEach((c,i)=>{(byQ[c.quarters]=byQ[c.quarters]||[]).push(dispName(era,i))});
-    h+=`<div class="doc"><h3>Quarters register</h3><p class="muted small">Where each person slept. Staff slept by their work, so a room hints at a job. Keys found on the dead match these rooms.</p>`+Object.keys(byQ).sort().map(q=>`<div class="row"><div class="nm">${esc(q)}</div><div class="right" style="max-width:60%">${byQ[q].map(esc).join('<br>')}</div></div>`).join('')+`</div>`;
+    h+=`<section class="tier qreg"><h3>Quarters register</h3><p class="muted small">Where each person slept. Staff slept by their work, so a room hints at a job. Keys found on the dead match these rooms.</p>`+Object.keys(byQ).sort().map(q=>`<div class="row qrow"><div class="nm">${esc(q)}</div><div class="qnames">${byQ[q].map(esc).join('<br>')}</div></div>`).join('')+`</section>`;
   }
   return h;
 }
@@ -4635,8 +4642,8 @@ function satchelView(){
   return h;
 }
 function recordsView(){
-  const run=S.run,era=S.era;
-  let h='';
+  const run=S.run,era=S.era,E=E_();
+  let h=`<h2 class="section-h" style="margin-top:0">Where and when</h2><div class="note whenwhere"><b>${esc(E.title)}</b><br>${esc(E.when)}${ERA_CLOCK[era.key]?` · ${esc(ERA_CLOCK[era.key].date)}`:''}</div>`;
   if(era.findings&&era.findings.length) h+=`<h2 class="section-h">Findings</h2>`+era.findings.map(t=>`<div class="note">${fillTokens(t)}</div>`).join('');
   if(run.relics.includes('tree')){const c2f=[];era.f2c.forEach((c,f)=>c2f[c]=f);h+=`<h2 class="section-h">Family Tree</h2>`+era.kin.map(k=>{const a=c2f[k.a],b2=c2f[k.b];const w=k.type==='spouse'?'married to':k.type==='sibling'?'sibling of':'parent of';return `<div class="note">${chip(a)} ${w} ${chip(b2)}</div>`}).join('')}
   h+=`<h2 class="section-h">The road</h2>${road()}<div class="stack" style="margin-top:8px"><button class="btn ghost" data-act="rules">How to play</button><button class="btn ghost debug" data-act="debugall">Debug: fill in every open answer</button><button class="btn ghost" data-act="abandon">Abandon this run</button></div>`;
