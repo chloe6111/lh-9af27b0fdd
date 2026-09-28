@@ -9,7 +9,7 @@
 /* Live site: the page itself can be cached for a while after a publish, while maps.js etc. come fresh, so an old page
    could show new data. version.txt holds the build stamp; if it differs, load the page again under a new URL.
    BUILD stays 'dev' in the project; stamp_build.py writes the stamp into dist/index.html and dist/version.txt. */
-(function(){var BUILD='20260927225402';if(BUILD==='dev'||window!==window.top||!window.fetch||location.protocol==='file:') return;
+(function(){var BUILD='20260927231107';if(BUILD==='dev'||window!==window.top||!window.fetch||location.protocol==='file:') return;
   fetch('version.txt?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.ok?r.text():''}).then(function(v){
     v=(v||'').trim();if(!v||v===BUILD) return;
     try{var k='lh-build-'+v;if(sessionStorage.getItem(k)) return;sessionStorage.setItem(k,'1')}catch(e){return}
@@ -937,6 +937,7 @@ html.desk .pcard .blindph,html.desk .membust .blindph,html.desk .bust .blindph,h
 .reglucky{display:flex;align-items:center;gap:12px;margin:0 0 12px;padding:10px 14px;border:1.5px solid #d8b86a;border-radius:14px;background:linear-gradient(135deg,rgba(216,184,106,.18),rgba(216,184,106,.05));color:var(--ink)}
 .reglucky b{color:#e8c870;font-family:var(--display);font-size:1.12em;font-weight:400}
 .reglucky small{display:block;color:var(--muted);font-size:.8rem;margin-top:2px}
+.regtwo .reglucky{padding:6px 12px;margin-bottom:8px}@media (orientation:landscape) and (max-height:540px){.regtwo .reglucky small{display:none}.regtwo .reglucky{margin-bottom:6px}}
 .regkey{flex:none;color:#e8c870;display:grid;place-items:center;width:42px;height:42px;border-radius:50%;background:rgba(216,184,106,.14)}
 .reglucky.luck{animation:lh-luck 1.6s ease-out .3s both}
 .reglucky.luck .regkey{animation:lh-keyturn 1.2s cubic-bezier(.3,1.4,.5,1) .6s both}
@@ -1100,7 +1101,7 @@ html.nomotion .cports .cport,html.nomotion .cports .cfull img,html.nomotion .cin
 <script src="pieces.js?v=4c6edf9d"></script>
 <script src="stacker.js?v=4c6edf9d"></script>
 <script src="maps.js?v=50a871d3"></script>
-<script src="relic_icons.js?v=d9b589be"></script>
+<script src="relic_icons.js?v=cf29987f"></script>
 <script>
 
 /* ---------- utilities ---------- */
@@ -1498,6 +1499,7 @@ REWARDS.length=0;Object.keys(REW).forEach(k=>delete REW[k]);
   {id:'lens',name:'Magnifying Lens',rar:'r',kind:'charge',uses:2,tags:['x2','Clue'],desc:'Twice, choose someone’s memory and uncover one extra hidden detail in it.'},
   {id:'tattoo',name:'Tattooist’s Eye',rar:'r',kind:'relic',perEra:2,tags:['Permanent','2 per era','Relationship'],desc:'Twice per era, learn whether a chosen person has family among the dead.'},
   {id:'carto',name:'Cartographer’s Kit',rar:'r',kind:'relic',tags:['Permanent','Role'],desc:'Every future era includes the quarters register: where everyone slept. Staff slept by their work, so a key hints at a job.'},
+  {id:'nav',name:'Navigator',rar:'r',kind:'relic',tags:['Permanent','Death'],desc:'Unlocks the traveller’s map for the rest of the run: tap a place a survivor mentions to see where they were headed.'},
   {id:'herald',name:'Seal of the House',rar:'r',kind:'relic',perEra:1,tags:['Permanent','1 per era','Name'],desc:'Once per era, choose a person and learn their surname.'},
   {id:'interro',name:'Interrogator',rar:'r',kind:'relic',perEra:1,tags:['Permanent','1 per era','Name'],desc:'Once per era, ask whether a person bears the name you gave them.'},
   {id:'paste',name:'Archivist’s Paste',rar:'r',kind:'charge',uses:1,tags:['x1','Name'],desc:'Paste a torn page back together: restore one damaged surname in full.'},
@@ -3763,9 +3765,13 @@ function genEra(key,idx,run){
   // Gambler’s Coin: half of all roles on the manifest are hidden at random
   const hideR=gambler?new Set(R.shuffle([...Array(n).keys()]).slice(0,Math.floor(n/2))):null;
   const rec={role:chars.map((c,i)=>hideR?!hideR.has(i):(c.fam==='head'||!R.chance(pR))),origin:chars.map(()=>!R.chance(pO))};
-  const quartersSrc=has('carto')?'carto':wax?'wax':R.chance(.35)?'luck':null,quartersDoc=!!quartersSrc;   // where the register came from, for the era intro
+  // where the register and the traveller's map came from, for the era intro: relics first, then one lucky find (35%)
+  // that gives whichever of the two isn't already guaranteed
+  let quartersSrc=has('carto')?'carto':wax?'wax':null,mapSrc=has('nav')?'nav':null;
+  if(R.chance(.35)){const opts=[!quartersSrc&&'q',!mapSrc&&'m'].filter(Boolean);if(opts.length){if(R.pick(opts)==='q') quartersSrc='luck';else mapSrc='luck'}}
+  const quartersDoc=!!quartersSrc;
   const f2c=R.shuffle([...Array(n).keys()]);
-  const era={id:Math.random().toString(36).slice(2,9),key,idx,n,chars,f2c,rec,quartersDoc,quartersSrc,kin,gambler,gOrder:R.shuffle([...Array(n).keys()])};
+  const era={id:Math.random().toString(36).slice(2,9),key,idx,n,chars,f2c,rec,quartersDoc,quartersSrc,mapSrc,kin,gambler,gOrder:R.shuffle([...Array(n).keys()])};
   // who survives: survivors get an escape memory somewhere in the timeline
   const all=R.shuffle([...Array(n).keys()]),nSurv=R.int(...by([2,3],[3,5],[4,7]));
   const survivors=all.slice(0,nSurv),dying=all.slice(nSurv);
@@ -3996,7 +4002,7 @@ function makeOffer(opt={}){
   const run=S.run,cnt=S.era&&S.era.gambler?4:3;   // Gambler's Coin: four choices for every offer in that era
   const legOdds=run.relics.includes('blind')?.10:.05;
   const usable=r=>(r.kind==='charge'&&!['steady','slate'].includes(r.id))||!!r.perEra;   // relics with a Use button
-  const avail=REWARDS.filter(r=>!(run.tutorial&&r.id==='blind')&&!(run.tutorial&&opt.start&&!usable(r))&&!(r.kind==='relic'&&run.relics.includes(r.id))&&!(opt.noInstant&&r.kind==='instant')),out=[];let g=0;
+  const avail=REWARDS.filter(r=>!(run.tutorial&&r.id==='blind')&&!(run.tutorial&&opt.start&&!usable(r))&&!(r.kind==='relic'&&run.relics.includes(r.id))&&!(opt.noInstant&&r.kind==='instant')&&!(r.id==='wax'&&(run.relics.includes('carto')||(S.era&&S.era.quartersDoc)))&&!(r.id==='nav'&&S.era&&mapOn(S.era))),out=[];let g=0;
   while(out.length<cnt&&g++<400){const roll=Math.random(),rar=roll<legOdds?'l':roll<legOdds+.25?'r':'c';const pool=avail.filter(r=>r.rar===rar&&!out.includes(r.id));if(pool.length) out.push(R.pick(pool).id)}
   const lasting=id=>['relic','next','geneal'].includes(REW[id].kind);
   if(!out.some(lasting)&&!(run.tutorial&&opt.start)){const pool=avail.filter(r=>lasting(r.id)&&r.rar!=='l'&&!out.includes(r.id));if(pool.length) out[R.int(0,out.length-1)]=R.pick(pool).id}
@@ -4057,6 +4063,7 @@ function applyReward(id){
   }
   if(id==='tally'){const cnt={};for(let f=0;f<era.n;f++){const g=causeOf(E,era.deathCause[f]).g;cnt[g]=(cnt[g]||0)+1}era.findings.push('Tally Sheet: '+Object.entries(cnt).sort((a,b)=>b[1]-a[1]).map(([g,n])=>`${g==='Alive'?'Survived':g} ×${n}`).join(', ')+'.')}
   if(id==='blind'&&now) run.charges.glimpse=(run.charges.glimpse||0)+1;
+  if(id==='nav'&&era&&!era.mapSrc){era.mapSrc='nav';toast('The Navigator: tap a place a survivor mentions in a memory to see it on the map.')}
 }
 function takeReward(id){
   const run=S.run;applyReward(id);
@@ -4236,7 +4243,8 @@ function cineView(){
 /* ---------- rendering ---------- */
 const app=document.getElementById('app');
 const PIN='<svg class="dpin" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22s7-7.1 7-12.2A7 7 0 0 0 5 9.8C5 14.9 12 22 12 22z" fill="currentColor"/><circle cx="12" cy="9.6" r="2.6" fill="#1b1812"/></svg>';
-const destLinks=h=>h.replace(/\[\[D(\d+)\]\]([\s\S]*?)\[\[\/D\]\]/g,(x,i,t)=>`<span class="dlink" role="button" tabindex="0" data-act="map" data-d="${i}" title="Show on a map">${t}${PIN}</span>`);
+const mapOn=era=>!!era&&(!('mapSrc' in era)||!!era.mapSrc);
+const destLinks=h=>!mapOn(S.era)?noLinks(h):h.replace(/\[\[D(\d+)\]\]([\s\S]*?)\[\[\/D\]\]/g,(x,i,t)=>`<span class="dlink" role="button" tabindex="0" data-act="map" data-d="${i}" title="Show on a map">${t}${PIN}</span>`);
 const noLinks=t=>t.replace(/\[\[\/?D\d*\]\]/g,'');
 const fillTokens=t=>destLinks(esc(t).replace(/\{F(\d+)\}/g,(x,f)=>chip(+f)));
 function guessName(f){const a=S.era.assign[f];return a.c!=null?dispName(S.era,a.c):''}
@@ -4297,15 +4305,21 @@ function hearts(){let s='';const run=S.run;for(let i=0;i<Math.max(run.hearts,STA
 function road(){return `<div class="road">${S.run.seq.map((k,i)=>`<span class="${i===S.run.idx?'now':''}">${i+1}. ${esc(ERAS[k].title.replace(/^The /,''))}</span>`).join('')}</div>`}
 /* the era intro celebrates a quarters register: luck gets the fanfare, a relic gets the credit */
 function registerLine(era){
-  const src=era.quartersSrc||'luck',key=`<svg viewBox="0 0 24 24" width="30" height="30" aria-hidden="true"><circle cx="7.5" cy="12" r="4.5" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M12 12h10M18 12v4M21 12v3" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>`;
-  const head={luck:'A stroke of luck!',wax:'Your Wax Seal holds.',carto:'Your Cartographer’s Kit delivers.'}[src];
-  const body={luck:'The quarters register survived the night.',wax:'The bundle of letters is the quarters register.',carto:'The quarters register is laid out before you.'}[src];
-  return `<div class="reglucky${src==='luck'?' luck':''}" role="note"><span class="regkey">${key}</span><div><b>${head}</b> ${body}<small>Keys found on the dead show where they slept, and rooms hint at jobs. See it in the Manifest.</small></div></div>`;
+  const key=`<svg viewBox="0 0 24 24" width="30" height="30" aria-hidden="true"><circle cx="7.5" cy="12" r="4.5" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M12 12h10M18 12v4M21 12v3" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>`;
+  const mapI=`<svg viewBox="0 0 24 24" width="30" height="30" aria-hidden="true"><path d="M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M9 4v14M15 6v14" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>`;
+  const out=[];
+  if(era.quartersDoc){const src=era.quartersSrc||'luck';
+    const head={luck:'A stroke of luck!',wax:'Your Wax Seal holds.',carto:'Your Cartographer’s Kit delivers.'}[src];
+    const body={luck:'The quarters register survived the night.',wax:'The bundle of letters is the quarters register.',carto:'The quarters register is laid out before you.'}[src];
+    out.push(`<div class="reglucky${src==='luck'?' luck':''}" role="note"><span class="regkey">${key}</span><div><b>${head}</b> ${body}<small>Keys found on the dead show where they slept, and rooms hint at jobs. See it in the Manifest.</small></div></div>`)}
+  if(era.mapSrc){const luck=era.mapSrc==='luck';
+    out.push(`<div class="reglucky${luck?' luck':''}" role="note"><span class="regkey">${mapI}</span><div><b>${luck?'A stroke of luck!':'Your Navigator knows the way.'}</b> ${luck?'A traveller’s map survived the night.':'The traveller’s map is yours.'}<small>Tap a place a survivor mentions in a memory to see it on the map.</small></div></div>`)}
+  return out.length>1?`<div class="regtwo">${out.join('')}</div>`:out.join('');   // both: compact
 }
 function introScreen(){
   const era=S.era,E=E_(),run=S.run;
   return `<div class="wrap screen intro-screen"><div class="ileft"><div class="kicker">Era ${run.idx+1} of ${ERA_COUNT}</div><h1>${esc(E.title)}</h1><p class="muted"><i>${esc(E.when)}</i></p>${ERA_CLOCK[era.key]?`<p class="idate">${esc(ERA_CLOCK[era.key].date)}</p>`:''}</div><div class="iright"><p>${esc(E.intro)}</p>
-  ${era.quartersDoc?registerLine(era):''}
+  ${registerLine(era)}
   <p>The Reliquary holds <b>${era.n} last moments</b>. The manifest lists ${era.n} names.${era.gambler?' The Gambler’s Coin has hidden half the roles on the manifest, and every relic offer this era has four choices.':''}</p>
   ${road()}<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:8px">${hearts()}<button class="btn primary" data-act="enter">Open the Reliquary</button></div></div></div>`;
 }
@@ -4589,7 +4603,7 @@ function modalView(){
   if(m.kind==='rules') return `<div class="scrim center-modal" data-act="closemodal"><div class="sheet rulesm"><h2 style="font-size:1.6rem">How to play</h2><div class="rules" data-page="blocks">
     <p class="rl">In each disaster a crowd was caught up: twelve people in the first era, twenty in the second, thirty in the third. Most died; a few were never found and survived. Tap a portrait to relive that person’s last moment as a written scene. Nothing is stated outright: read the sounds, wounds and voices, and watch for details that are there to mislead you.</p>
     <p class="rl">For each person, work out their name from the manifest and their fate: how they died, and who killed them if someone did, or where they escaped to if they lived.</p>
-    <p class="rl">How someone dresses hints at their station and role. Language and accent point to a homeland. Keys match the quarters register. Family members share a surname. Sometimes a name is called out.</p>
+    <p class="rl">How someone dresses hints at their station and role. Language and accent point to a homeland. Keys match the quarters register. Family members share a surname. Sometimes a name is called out. When you have a traveller’s map, the places survivors mention can be tapped to see where they were headed.</p>
     <p class="rl">The manifest is damaged: some names or homelands are torn away, and each ? is a letter you can’t read. Voices, monograms, family ties and how people are treated all help you match a face to a damaged entry.</p>
     <p class="rl">Consult the Ledger to test your answers. If at least two open fates are fully right, two of them are sealed; press again to seal more. If not, you lose a heart.</p>
     <p class="rl">Each successful consultation seals two fates, and every second one earns a relic pick: three relics to choose from. Every era also begins with a relic pick, and sealing an era’s last fates earns its own relic choice.</p>
