@@ -935,6 +935,10 @@ html.nomotion #tipov .tiphole{animation:none}
   .pgrid > .pcard:nth-child(odd){scroll-snap-align:start;scroll-snap-stop:normal}
   .pcard .pbadge{top:4px;font-size:11px;padding:3px 6px}.pcard .pbadge.pnum{left:4px}.pcard .pbadge.ptime{right:4px}
   .pcard .pname{font-size:11px!important;bottom:22px!important}.pcard .pfate{font-size:10px!important}
+  /* playback portraits keep a normal card shape too (sized from the height, not the thin phone-card width) */
+  .cine .cports .cfull,.cine .cports.n2 .cfull{width:calc((100dvh - var(--topH) - 18px) * .46)!important}
+  .cine .cports.n2 .cfull{height:calc((100dvh - var(--topH) - 18px) * .86)!important;width:calc((100dvh - var(--topH) - 18px) * .86 * .46)!important}
+  .cinecap,.cinetitle{max-width:none!important;min-width:0}
 }
 /* ---- motion polish ---- */
 .cine::after{content:"";position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at 50% 45%,transparent 55%,rgba(0,0,0,.55) 100%);z-index:1}
