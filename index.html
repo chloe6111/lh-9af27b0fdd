@@ -9,7 +9,7 @@
 /* Live site: the page itself can be cached for a while after a publish, while maps.js etc. come fresh, so an old page
    could show new data. version.txt holds the build stamp; if it differs, load the page again under a new URL.
    BUILD stays 'dev' in the project; stamp_build.py writes the stamp into dist/index.html and dist/version.txt. */
-(function(){var BUILD='20260928124142';if(BUILD==='dev'||window!==window.top||!window.fetch||location.protocol==='file:') return;
+(function(){var BUILD='20260928130112';if(BUILD==='dev'||window!==window.top||!window.fetch||location.protocol==='file:') return;
   fetch('version.txt?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.ok?r.text():''}).then(function(v){
     v=(v||'').trim();if(!v||v===BUILD) return;
     try{var k='lh-build-'+v;if(sessionStorage.getItem(k)) return;sessionStorage.setItem(k,'1')}catch(e){return}
@@ -1119,8 +1119,8 @@ html.nomotion .cports .cport,html.nomotion .cports .cfull img,html.nomotion .cin
 <div id="app"></div>
 <div id="fsgate"><div><p class="fstitle">The Last Hour</p><button id="fsbtn" class="btn primary">Play in full screen</button><p class="fshint">Best played sideways, in full screen.</p></div></div>
 <div id="rotate" aria-hidden="true"><div><div class="rotphone"></div><p>Turn your phone sideways to play</p></div></div>
-<script src="pieces.js?v=4c6edf9d"></script>
-<script src="stacker.js?v=4c6edf9d"></script>
+<script src="pieces.js?v=db10bbdf"></script>
+<script src="stacker.js?v=db10bbdf"></script>
 <script src="maps.js?v=50a871d3"></script>
 <script src="relic_icons.js?v=10290547"></script>
 <script>
@@ -1956,7 +1956,6 @@ function chatterLines(s,E,era,X){
     const a=R.pick(present),others=present.filter(f=>f!==a),b=others.length?R.pick(others):null;
     const kinds=['seen','seen','nice','rude'];
     if(earlier.length) kinds.push('rumour');
-    if(earlier.some(f=>era.killerOf[f]!=null)) kinds.push('killer');
     if(b!=null) kinds.push('angry','casual','post');
     const avail=kinds.filter(x=>!used.has(x));if(!avail.length) break;
     const k=R.pick(avail);used.add(k);

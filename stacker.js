@@ -138,7 +138,7 @@ function stkFaceMap(era){
 }
 function stkLayers(era,E,c){
   const r=roleOf(E,c.role),F=faceOf(c),B=archerBody(c,F),ci=era.chars.indexOf(c);
-  const main=mixC(c.bodyHex||r.body||tierOf(E,c.tier)[2],'#ffffff',.1),trim=c.trim||'#e0b040';
+  const main=mixC((r.body&&stkHasRoleClue(era,c)?r.body:null)||c.bodyHex||r.body||tierOf(E,c.tier)[2],'#ffffff',.1)   /* a story quoting the job ("a legionary's red tunic") needs the job's own colour, not a varied one */,trim=c.trim||'#e0b040';
   const skin=PSKIN[Math.min(5,c.skin)];
   const T={skin,hair:F.hair,main,second:B.second,lips:mixC(mulC(skin,.86),F.lipstick?'#b0303a':'#b85a50',F.lipstick?.45:.28)};
   const hk=stkHat(c,E,era.key,r,era),helm=hk==='helm';
