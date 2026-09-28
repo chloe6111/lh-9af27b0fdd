@@ -9,7 +9,7 @@
 /* Live site: the page itself can be cached for a while after a publish, while maps.js etc. come fresh, so an old page
    could show new data. version.txt holds the build stamp; if it differs, load the page again under a new URL.
    BUILD stays 'dev' in the project; stamp_build.py writes the stamp into dist/index.html and dist/version.txt. */
-(function(){var BUILD='20260928130112';if(BUILD==='dev'||window!==window.top||!window.fetch||location.protocol==='file:') return;
+(function(){var BUILD='20260928132524';if(BUILD==='dev'||window!==window.top||!window.fetch||location.protocol==='file:') return;
   fetch('version.txt?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.ok?r.text():''}).then(function(v){
     v=(v||'').trim();if(!v||v===BUILD) return;
     try{var k='lh-build-'+v;if(sessionStorage.getItem(k)) return;sessionStorage.setItem(k,'1')}catch(e){return}
@@ -985,6 +985,9 @@ html.nomotion #tipov .tiphole{animation:none}
 }
 .btn.seal.heard{opacity:.5;filter:saturate(.5)}
 .qrow{display:block}.qrow .qnames{color:var(--muted);font-size:.9em;margin-top:2px;line-height:1.35}
+.setsheet{max-width:520px}.setrow{display:flex;align-items:center;justify-content:space-between;gap:14px;width:100%;text-align:left;background:rgba(255,255,255,.04);border:1px solid #3a342a;border-radius:12px;padding:10px 14px;margin:0 0 8px;color:inherit;font:inherit;cursor:pointer}
+.setrow b{display:block;font-weight:600}.setrow small{display:block;color:var(--muted);font-size:.8rem;margin-top:2px}.setval{flex:none;color:#e8c870;font-weight:600;min-width:3.2em;text-align:right}
+@media (orientation:landscape) and (max-height:540px){.setrow{padding:6px 12px;margin-bottom:6px}.setsheet .section-h{margin-bottom:6px}}
 /* typing a note on a touch screen: the box sits at the top, above the on-screen keyboard */
 html.kbtyping .cnadd{position:fixed!important;top:10px;left:12px;right:12px;z-index:400;margin:0!important;padding:10px;border-radius:14px;background:#1b1812;border:1.5px solid #d8b86a;box-shadow:0 10px 40px rgba(0,0,0,.7);display:flex;gap:8px}
 html.kbtyping .cnadd .cnin{flex:1;font-size:16px}
@@ -1122,7 +1125,7 @@ html.nomotion .cports .cport,html.nomotion .cports .cfull img,html.nomotion .cin
 <script src="pieces.js?v=db10bbdf"></script>
 <script src="stacker.js?v=db10bbdf"></script>
 <script src="maps.js?v=50a871d3"></script>
-<script src="relic_icons.js?v=10290547"></script>
+<script src="relic_icons.js?v=798950b2"></script>
 <script>
 
 /* ---------- utilities ---------- */
@@ -1448,7 +1451,7 @@ const ERA_CFG={
     causes:['burned','crush_stones','clawed','eaten','torn','spiked','sword','knifed','clubbed','decap','speared','strangled','drowned','fell_stairs','poisoned','illness','expired','exploded','sui_knife','sui_spear'],
     items:{sword:'gladius',knifed:'dagger',decap:'gladius'},beasts:{clawed:'lion',eaten:'lion',torn:'lion',spiked:'bull'},
     alive:['Rome','Naples','Cyprus','Alexandria','Athens'],
-    ambient:['A deep rumble rolls down from the mountain.','Ash hisses on the roof tiles.','Beasts roar in the arena cages.','The sea draws back with a roar.','Pumice rattles like hail.'],
+    ambient:['A deep rumble rolls down from the mountain.','Ash hisses on the roof tiles.','Beasts roar in the arena cages.','The sea draws back with a roar.','Ash and hot stones rattle down like hail.','Lava rock clatters across the roof tiles.'],
     say:['Help me! Gods, help me!','Juno protect us…','Get away from me!','To the boats! Run!','The sky is burning!'],
     call:['Run!','Get to the boats!','Behind you!','Take my hand!'],
     threat:['The gold is mine now.','You’ll not see the boats.','For every year I served you.','Quiet. Quiet now.'],
@@ -1708,9 +1711,9 @@ const PLACE_AMB={
     'the shrine of the lares':['A little lamp flickers before the painted gods.','Offerings of bread lie on the altar.','Incense curls in the still air.'],
     'the baths':['Steam rises from the hot pool.','Water drips from the vaulted ceiling.','The mosaic floor is slick underfoot.'],
     'the kitchen':['Pots bubble on the stove, unattended.','Garlic and fish hang from the rafters.','Amphorae lean against the wall.'],
-    'the villa steps':['People jostle down toward the shore.','Pumice rattles on the steps.','The sky is black with ash, whatever the hour.'],
+    'the villa steps':['People jostle down toward the shore.','Hot stones clatter down the steps.','The sky is black with ash, whatever the hour.'],
     'the beach':['Waves hiss on the dark sand.','Boats lie stranded as the sea pulls back.','The mountain glows red across the bay.']}};
-function placeAmb(era,place){const t=(PLACE_AMB[era.key]||{})[String(place).toLowerCase()];return t?R.pick(t):null}
+function placeAmb(era,place){let t=(PLACE_AMB[era.key]||{})[String(place).toLowerCase()];const sc=era.scen&&scenOf(era.key,era.scen);if(t&&sc&&sc.place) t=t.filter(x=>!sc.place.test(x));return t&&t.length?R.pick(t):null}   // lines about a disaster that didn't happen are left out
 /* A present person is sometimes called by name and turns: true information, so it can only make an era easier. */
 function nameCall(era,f,X,after,V){
   const c=era.chars[era.f2c[f]],parts=c.name.split(' '),sur=c.sur||parts[parts.length-1],first=parts[0],nm=R.chance(.25)?first:sur;
@@ -1836,7 +1839,7 @@ function buildStory(s,E,era){
   const moment=[snd,evl];
   if(s.killer!=null&&cause.either) moment.push(fill(R.pick(EITHER_KILL[cause.either])).replace(/\{K\}/g,X(s.killer)));   // accident or murder: murder shows the act
   else if(s.killer!=null){const w=WEAPON[cause.item]||WEAPON.knife;moment.push(fill(R.pick(KILL_T[w.cls])).replace(/\{K\}/g,X(s.killer)).replace('{W}',R.pick(w.d)))}
-  if(cause.beast){const b=R.pick(BEAST_D[cause.beast]),had=moment.some(t=>t.includes('{B}'));for(let i=0;i<moment.length;i++) moment[i]=moment[i].replace(/\{B\}/g,b);if(!had) moment.push(R.pick([`Afterwards ${b} slinks off into the dark.`,`Something moves away from the body: ${b}.`,`In the shadows stands ${b}, breathing hard.`]))}
+  if(cause.beast){const b=R.pick(BEAST_D[cause.beast]),had=moment.some(t=>t.includes('{B}'));for(let i=0;i<moment.length;i++) moment[i]=moment[i].replace(/\{B\}/g,b);if(!had) moment.push(R.pick(cause.beast==='dragon'?[`Overhead, ${b} beats away into the dark.`,`Above the walls, ${b} wheels once and is gone.`,`Smoke drifts from the stones where ${b} landed.`]:[`Afterwards ${b} slinks off into the dark.`,`Something moves away from the body: ${b}.`,`In the shadows stands ${b}, breathing hard.`]))}
   // assemble: before (the threat last), the moment, reactions first, then the aftermath, then a bystander's cry
   if(typeof chatterLines==='function') chatterLines(s,E,era,X).forEach(t=>before.push(t));   // talk before the moment: extra, true, never needed
   const pre=R.shuffle(before);if(threat) pre.push(threat);
@@ -2018,8 +2021,8 @@ const ESCAPE={
     ev:['{V} runs down the drive, coat over the head, slips on the ice, and gets up bloody and staggering.','{V} crashes through the scullery window into the snow, lies still, then pushes up onto shaking arms.','A shot kicks up gravel at {V}’s heels; {V} stumbles, catches the carriage rail and hauls up onto the box.','Flames catch {V}’s sleeve; {V} beats them out against the wet lawn and lurches on toward the gate.','{V} is knocked flat by a bolting horse, rolls clear of the hooves, and limps away clutching one side.']},
   liner:{snd:['A lifeboat hits the water with a slap.','Oars bite. Someone counts the strokes.','A davit rope screams through its block.','A wave breaks over the rail with a roar.'],
     ev:['{V} goes under the black water, is gone a long moment, then surfaces choking beside a lifeboat and is dragged over the gunwale.','{V} falls the last yards into a lifeboat, cracks against a thwart, and lies curled and shaking in the bilge.','A wave throws {V} against the rail; {V} hangs on, blue-lipped, until hands pull {V} down into the boat.','{V} jumps, hits the water hard, and thrashes toward the oars with a bleeding scalp.','{V} is wedged into the bow of a lifeboat, soaked through and coughing up seawater.']},
-  villa:{snd:['Oars dip into boiling surf.','Hooves on the coast road, going hard.','The sail of a small boat snaps full of wind.','Pumice rattles down like hail.'],
-    ev:['{V} is knocked flat by falling pumice, lies still under the grey drift, then lurches up bleeding from the scalp and runs for the boats.','{V} wades into the scalding surf, shrieking, and is hauled over the side of a fishing boat.','{V} is thrown from a horse on the coast road, gets up bloody and staggering, and catches the bridle again.','{V} crawls out from under a fallen beam, coughing ash, and stumbles toward the water.','{V} clings to the stern of a boat as it pulls away, legs dragging in the surf.']}
+  villa:{snd:['Oars dip into boiling surf.','Hooves on the coast road, going hard.','The sail of a small boat snaps full of wind.','Ash and lava rock rattle down like hail.'],
+    ev:['{V} is knocked flat by falling lava rock, lies still under a grey drift of ash, then lurches up bleeding from the scalp and runs for the boats.','{V} wades into the scalding surf, shrieking, and is hauled over the side of a fishing boat.','{V} is thrown from a horse on the coast road, gets up bloody and staggering, and catches the bridle again.','{V} crawls out from under a fallen beam, coughing ash, and stumbles toward the water.','{V} clings to the stern of a boat as it pulls away, legs dragging in the surf.']}
 };
 const ESC_OPEN=OPENERS;
 const ESC_END=['Then the moment holds, and everything is still.','The sound stops. The scene freezes.','And then silence.'];
@@ -2046,7 +2049,7 @@ function buildEscapeStory(s,E,era){
   const hint=destHint(era,s.victim);
   if(others.length&&R.chance(.3)){const o=R.pick(others);voices.push(`${X(o)} calls after ${V}: “${destLink(era,s.dest,R.pick(H.say))}”`)}else voices.push(hint);
   groups.push(R.shuffle(voices));
-  const esc=ESCAPE[era.key];
+  const esc=E.escape||ESCAPE[era.key];
   s.impact=groups.flat().length;   // the near-miss: same impact effect as a death, so it gives nothing away
   groups.push([R.pick(esc.snd),fill(R.pick(esc.ev))]);
   const after=s.tags.filter(t=>t.kind==='key'||t.kind==='crest').map(t=>{const Q=(t.label||'').replace('key: ','');
@@ -2419,6 +2422,89 @@ Object.keys(DEATHS).forEach(k=>{
   E.causes=fresh.concat(hidden,alive);
   (NEW_PLACES[k]||[]).forEach(pl=>{if(!E.places.includes(pl)) E.places.push(pl)});
 });
+/* ---------- scenarios: the same place, a different night ----------
+   Each era usually gets its famous disaster, but sometimes something else happens (or nothing but murder).
+   A scenario overrides the era's title, intro, background lines, shouts, threats and escape scenes, drops
+   deaths that need the usual disaster, can add its own, and filters place descriptions that mention it.
+   genEra picks one and stores era.scen; E_() and genEra use the overlay from eraE(). */
+const SCENARIOS={
+  medieval:[{id:'siege',w:2},
+    {id:'dragon',w:1,title:'The Wyrm of Varrow Keep',intro:'A dragon came down on a border keep at midnight. Garrison, household and guests alike died inside its walls, and the wyrm burned whatever was left.',
+      ambient:['A shadow sweeps over the courtyard, blotting out the stars.','Something vast beats its wings above the towers.','A roar shakes dust from the rafters.','Thatch blazes on the outbuildings.','The bell rings wildly, then stops.','Horses scream in the stables.','A gust of hot air rattles every shutter.'],
+      say:['Help me! For God’s sake, help me!','Mother of God, not like this…','Get back! Get away from me!','It’s on the roof! It’s on the roof!','Into the cellars! Hide!'],
+      threat:['Stay down.','Let the beast have you.','For the new lord of Varrow.','No one will ever know.'],
+      place:/siege|enemy|campfires|each blow/i,add:['dragon'],drop:['shot_cannon'],favor:{dragon:.2},
+      escape:{snd:['Wings thunder overhead, then fade.','A roar, and a gout of flame lights the whole court.','Timber crashes down in a shower of sparks.','Hooves clatter hard on the cobbles of the postern.'],
+        ev:['{V} is knocked flat by a blast of burning air, rolls through the mud to put out the flames, and staggers for the gate.','A great claw rakes the wall beside {V}; {V} falls, bleeding, then scrambles up and runs for the postern.','{V} crawls out from under a burning beam, coughing, one arm hanging, and limps into the dark.','{V} drops from the wall into the moat, sinks under, then comes up spluttering and claws onto the far bank.','{V} is thrown from a bolting horse, lies still in the mud a long moment, then gets up bloody and staggering toward the gate.']}},
+    {id:'feast',w:1,title:'The Feast at Varrow Keep',intro:'No army came to Varrow Keep. Its lord held a feast on Midsummer Eve, and by morning his hall was full of the dead.',
+      ambient:['A harp plays in the great hall, then falters.','Laughter rises and dies away.','A dog barks at the gate.','Rain drums on the shutters.','A goblet rolls across the floor.','The fire in the hearth spits and crackles.','Somebody is singing, badly, far off.'],
+      say:['Help me! For God’s sake, help me!','Mother of God, not like this…','Get back! Get away from me!','Murder! Murder in the hall!','Bar the doors!'],
+      threat:['Stay down.','You should never have come to this feast.','For the new lord of Varrow.','No one will ever know.'],
+      place:/siege|enemy|campfires|each blow|firelight|smoke/i,drop:['shot_cannon'],
+      escape:{snd:['Hooves clatter hard on the cobbles of the postern.','A door slams, and running feet.','A knife hisses past and thuds into timber.','A shutter bangs open on the dark.'],
+        ev:['{V} drops from the wall into the moat, sinks under, then comes up spluttering and claws onto the far bank.','{V} is thrown from a bolting horse, lies still in the mud a long moment, then gets up bloody and staggering toward the gate.','A blade tears through {V}’s sleeve; {V} clutches the arm, grits teeth, and limps out through the postern.','{V} slides down the knotted rope too fast, lands hard, and crawls off into the dark on hands and knees.','{V} tumbles down the kitchen stair, lies winded among the pots, then limps out through the scullery door.']}}],
+  manor:[{id:'fire',w:2},
+    {id:'blizzard',w:1,title:'The Blackmere Hall Blizzard',intro:'A blizzard buried a country house on the night of its winter ball. The roads closed, the lamps failed, and nobody inside lived to see the thaw.',
+      ambient:['Wind screams in the chimneys.','Snow hisses against the windows.','A lamp gutters and goes out.','The house creaks under the weight of snow.','Somewhere a shutter bangs, again and again.','A clock begins to strike midnight.','Breath shows white in the cold air.'],
+      say:['Help! Someone, please help!','Good Lord, it’s freezing in here!','Get away from me!','The doors are snowed in!','Let me out! The door is locked!'],
+      place:/smoke|scorched|heat rolls|firelight from the house/i,
+      escape:{snd:['Carriage wheels grind through deep snow.','Glass shatters and something lands hard in a drift.','Wind howls through an open door.','A horse screams at the gate, then gallops.'],
+        ev:['{V} wades out into the snow, falls, lies still a long moment, then drags up and staggers toward the lodge lights.','{V} crashes through the scullery window into a drift, lies still, then pushes up onto shaking arms.','{V} slips on the ice of the drive, cracks against the gatepost, and limps on, blood freezing on the brow.','{V} is knocked flat by a bolting horse, rolls clear of the hooves, and limps away clutching one side.','{V} climbs out of a snowed-in window, drops into the drift, and crawls toward the stables.']}},
+    {id:'ball',w:1,title:'The Blackmere Hall Masquerade',intro:'There was no fire at Blackmere Hall. A masked ball went on until dawn, and between the dances, one by one, the guests and servants died.',
+      ambient:['A waltz swells and fades in the ballroom.','Laughter rings out behind a mask.','A clock begins to strike midnight.','Champagne corks pop in the dining room.','Hounds bay in the kennels.','Carriages wait in the drive, their lamps lit.'],
+      say:['Help! Someone, please help!','Good Lord… someone’s been killed!','Get away from me!','Murder! Fetch the constable!','Let me out! The door is locked!'],
+      place:/smoke|scorched|heat rolls|firelight from the house/i,
+      escape:{snd:['Carriage wheels on gravel, going fast.','Glass shatters and something lands hard in the snow.','A shot cracks across the lawn.','A horse screams at the gate, then gallops.'],
+        ev:['{V} runs down the drive, coat over the head, slips on the ice, and gets up bloody and staggering.','{V} crashes through the scullery window into the snow, lies still, then pushes up onto shaking arms.','A shot kicks up gravel at {V}’s heels; {V} stumbles, catches the carriage rail and hauls up onto the box.','{V} is knocked flat by a bolting horse, rolls clear of the hooves, and limps away clutching one side.','{V} tears off a mask, falls down the back stairs, and limps out into the dark garden.']}}],
+  liner:[{id:'ice',w:2},
+    {id:'fire',w:1,title:'The Burning of the RMS Aurelia',intro:'A fire smouldered in the Aurelia’s coal bunkers for three days before it reached the saloons. She was abandoned in the dark, mid-Atlantic. The manifest lists passengers and crew.',
+      ambient:['Smoke rolls along the corridors.','The deck plates are hot underfoot.','The ship’s whistle shrieks.','A band plays on, very far away.','Lifeboat davits squeal.','Paint blisters and peels on a bulkhead.'],
+      say:['Help! Help us!','God help us, the whole ship’s on fire!','Get away from me!','Let me into the boat!','Where is my family?'],
+      place:/laps at the bottom|rises past|seawater gushes|black water swirls|soaked through|shoe floats/i,
+      escape:{snd:['A lifeboat hits the water with a slap.','Oars bite. Someone counts the strokes.','A davit rope screams through its block.','Flames roar up out of a ventilator.'],
+        ev:['{V} goes under the black water, is gone a long moment, then surfaces choking beside a lifeboat and is dragged over the gunwale.','{V} falls the last yards into a lifeboat, cracks against a thwart, and lies curled and shaking in the bilge.','Flames catch {V}’s coat; {V} tears it off, burned hands and all, and scrambles down the ladder into the boat.','{V} jumps, hits the water hard, and thrashes toward the oars with a bleeding scalp.','{V} is wedged into the bow of a lifeboat, blackened with smoke and coughing.']}},
+    {id:'storm',w:1,title:'The Aurelia and the Hurricane',intro:'A hurricane caught the Aurelia four days out. By midnight her rudder was gone and her holds were flooding. The manifest lists passengers and crew. The sea kept the rest.',
+      ambient:['Wind shrieks in the rigging.','A wave crashes over the bow.','The whole ship lurches and groans.','Rain lashes the portholes.','Lifeboat davits squeal.','Thunder cracks overhead.'],
+      say:['Help! Help us!','God help us, the water’s coming in!','Get away from me!','Let me into the boat!','Hold on to something!'],
+      place:/stars are very bright/i}],
+  villa:[{id:'eruption',w:2},
+    {id:'quake',w:1,title:'The Great Earthquake at Herculaneum',intro:'The ground at Herculaneum shook at nightfall and would not stop. Walls came down on a seaside villa, and then the sea came in. None of the household reached safety.',
+      ambient:['The ground heaves, and the lamps swing.','Plaster rains from the ceiling.','Somewhere a wall collapses with a roar.','The sea draws back with a roar.','Dogs howl all across the town.','Roof tiles slide and shatter in the street.'],
+      say:['Help me! Gods, help me!','Juno protect us…','Get away from me!','To the boats! Run!','The walls are falling!'],
+      place:/ash|lava|hot stones|mountain glows/i,drop:['exploded'],
+      escape:{snd:['Oars dip into churning surf.','Hooves on the coast road, going hard.','The sail of a small boat snaps full of wind.','Masonry crashes down behind.'],
+        ev:['{V} is knocked flat by falling roof tiles, lies still in the rubble, then lurches up bleeding from the scalp and runs for the boats.','{V} wades into the surging sea, shrieking, and is hauled over the side of a fishing boat.','{V} is thrown from a horse on the coast road, gets up bloody and staggering, and catches the bridle again.','{V} crawls out from under a fallen beam, coughing plaster dust, and stumbles toward the water.','{V} clings to the stern of a boat as it pulls away, legs dragging in the surf.']}},
+    {id:'saturnalia',w:1,title:'Saturnalia at Herculaneum',intro:'The mountain slept. A seaside villa kept Saturnalia, the masters serving their slaves, and by morning the household lay dead among the garlands.',
+      ambient:['Flutes and drums play in the street.','Someone laughs too loudly in the atrium.','Wine is poured, and poured again.','A dog barks at the gate.','Garlands hang from every doorway.','Waves break softly on the shore.'],
+      say:['Help me! Gods, help me!','Juno protect us…','Get away from me!','Murder! Murder in the house!','Bar the door!'],
+      threat:['The gold is mine now.','No one will miss you tonight.','For every year I served you.','Quiet. Quiet now.'],
+      place:/ash|lava|hot stones|mountain|tremor|sea pulls back|jostle/i,drop:['exploded'],
+      escape:{snd:['Oars dip into the dark water.','Hooves on the coast road, going hard.','The sail of a small boat snaps full of wind.','A door bursts open on the street.'],
+        ev:['{V} is knocked down the villa steps, lies still at the bottom, then lurches up bleeding from the scalp and runs for the boats.','A blade opens {V}’s arm; {V} clutches it, and staggers out into the festival crowd.','{V} is thrown from a horse on the coast road, gets up bloody and staggering, and catches the bridle again.','{V} crawls out through the kitchen drain, filthy and shaking, and stumbles toward the water.','{V} clings to the stern of a boat as it pulls away, legs dragging in the surf.']}}]
+};
+const scenOf=(key,id)=>(SCENARIOS[key]||[]).find(x=>x.id===id)||null;
+function pickScenario(key){const L=SCENARIOS[key]||[];if(!L.length) return null;let r=Math.random()*L.reduce((a,x)=>a+x.w,0);for(const x of L){r-=x.w;if(r<0) return x}return L[0]}
+const SCEN_E={};
+/* the era as this scenario tells it (the first, default scenario is the era itself) */
+function eraE(key,id){
+  const B=ERAS[key],sc=scenOf(key,id);if(!sc||sc===SCENARIOS[key][0]) return B;
+  const k=key+'|'+id;if(SCEN_E[k]) return SCEN_E[k];
+  const O=Object.create(B);
+  ['title','intro','ambient','say','threat'].forEach(f=>{if(sc[f]) O[f]=sc[f]});
+  O.escape=sc.escape||null;O.scen=sc;
+  O.causes=B.causes.map(c=>(sc.drop||[]).includes(c.id)?Object.assign({},c,{hidden:true}):(sc.add||[]).includes(c.id)?Object.assign({},c,{hidden:false}):c);
+  return SCEN_E[k]=O;
+}
+/* the dragon's own death (hidden in every other Varrow Keep night) */
+(function(){
+  const E=ERAS.medieval,i=E.causes.findIndex(c=>c.alive);
+  const cz={id:'dragon',g:'Mauled',name:'Killed by the dragon',verb:'was killed by the dragon',kill:'beast',beast:'dragon',fx:'blood',hidden:true};
+  E.causes.splice(i<0?E.causes.length:i,0,cz);
+  BEAST_D.dragon=['a vast scaled wyrm','the dragon','a great red-scaled shape on leathery wings'];
+  STORY.dragon={snd:['A roar like a furnace door opening, and a rush of wings.','Wingbeats, huge and slow, then a scream cut short.','A blast of heat, and something enormous lands on the stones.'],
+    ev:['{V} lies scorched and torn, claw marks raked across the chest.','{V} is flung against the wall, burned and broken; {B} rises away into the dark.','Great talons have opened {V} from shoulder to hip.']};
+  if(typeof CAUSE_PLACES!=='undefined') (CAUSE_PLACES.medieval=CAUSE_PLACES.medieval||{}).dragon=['the Ramparts','the Well Court','the Stables','the Gatehouse'];
+})();
 function placeFor(E,key,id){const ok=((CAUSE_PLACES[key]||{})[id]||[]).filter(pl=>E.places.includes(pl));return R.pick(ok.length?ok:E.places)}
 /* simpler country names and realistic names */
 const ORIGIN_FIX={
@@ -3881,7 +3967,8 @@ const QUARTERS={
 Object.entries(QUARTERS).forEach(([k,tiers])=>{if(ERAS[k]) Object.entries(tiers).forEach(([t,q])=>ERAS[k].quarters[t]=Object.keys(q))});
 function quartersFor(key,E,c){const q=(QUARTERS[key]||{})[c.tier]||{};return Object.keys(q).find(n=>q[n].includes(c.role))||R.pick(E.quarters[c.tier])}
 function genEra(key,idx,run){
-  const E=ERAS[key],n=CAST[idx],d=idx,has=id=>run.relics.includes(id);
+  const scen=pickScenario(key),E=eraE(key,scen&&scen.id),n=CAST[idx],d=idx,has=id=>run.relics.includes(id);
+  (run.scens=run.scens||[])[idx]=scen&&scen.id;
   const by=(a,b,c)=>n>=30?c:n>=20?b:a;   // pick a range by cast size: small (12), medium (20), full (30)
   const gambler=!!run.next.gambler,wax=!!run.next.wax;
   run.next={};
@@ -3927,7 +4014,7 @@ function genEra(key,idx,run){
   if(R.chance(LUCK_FIND)){const opts=[!quartersSrc&&'q',!mapSrc&&'m',!transSrc&&'t'].filter(Boolean);if(opts.length){const o=R.pick(opts);if(o==='q') quartersSrc='luck';else if(o==='m') mapSrc='luck';else transSrc='luck'}}
   const quartersDoc=!!quartersSrc;
   const f2c=R.shuffle([...Array(n).keys()]);
-  const era={id:Math.random().toString(36).slice(2,9),key,idx,n,chars,f2c,rec,quartersDoc,quartersSrc,mapSrc,transSrc,kin,gambler,gOrder:R.shuffle([...Array(n).keys()])};
+  const era={id:Math.random().toString(36).slice(2,9),key,idx,n,chars,f2c,rec,quartersDoc,quartersSrc,mapSrc,transSrc,scen:scen&&scen.id,kin,gambler,gOrder:R.shuffle([...Array(n).keys()])};
   // who survives: survivors get an escape memory somewhere in the timeline
   const all=R.shuffle([...Array(n).keys()]),nSurv=R.int(...by([2,3],[3,5],[4,7]));
   const survivors=all.slice(0,nSurv),dying=all.slice(nSurv);
@@ -3943,7 +4030,8 @@ function genEra(key,idx,run){
     if(ev.escape){const present=[f];R.shuffle(alive).slice(0,R.int(0,2)).forEach(x=>present.push(x));
       return {victim:f,killer:null,escape:true,cause:deathCause[f],dest:causeOf(E,deathCause[f]).alive,place:R.pick(E.places),present,voices:[],tags:[],reach:[]}}
     let pool=deathPool.filter(x=>(!x.old||c.old)&&(counts[x.id]||0)<3);
-    const cause=R.pick(pool);counts[cause.id]=(counts[cause.id]||0)+1;deathCause[f]=cause.id;
+    const fav=E.scen&&E.scen.favor,favId=fav&&Object.keys(fav).find(id=>R.chance(fav[id])&&pool.some(x=>x.id===id));   // a scenario's own death turns up often (the dragon)
+    const cause=favId?pool.find(x=>x.id===favId):R.pick(pool);counts[cause.id]=(counts[cause.id]||0)+1;deathCause[f]=cause.id;
     const killer=(cause.kill==='person'||(cause.either&&R.chance(.45)))&&alive.length?R.pick(alive):null;   // either: accident or murder
     if(cause.kill==='person'&&killer==null){const alt=R.pick(deathPool.filter(x=>x.kill!=='person'&&!x.either&&(!x.old||c.old)));deathCause[f]=alt.id;killerOf[f]=null;
       const present=[f];return {victim:f,killer:null,cause:alt.id,place:placeFor(E,key,alt.id),present,voices:[],tags:[],reach:[]}}
@@ -4068,7 +4156,7 @@ function newRun(first){
     if(r.kind==='charge') S.run.charges[id]=(S.run.charges[id]||0)+(r.uses||1);else if(r.kind==='relic'&&!S.run.relics.includes(id)) S.run.relics.push(id)});
   S.era=genEra(seq[0],0,S.run);ui.tab='gather';ui.mem=null;save();render();window.scrollTo(0,0);
 }
-const E_=()=>ERAS[S.era.key];
+const E_=()=>eraE(S.era.key,S.era.scen);
 const charOfFace=f=>S.era.chars[S.era.f2c[f]];
 const openFaces=()=>[...Array(S.era.n).keys()].filter(f=>!S.era.sealed[f]);
 function needsKiller(id){const c=id&&causeOf(E_(),id);return !!(c&&(c.weapon||c.either))}
@@ -4368,11 +4456,12 @@ function applyTarget(tool,f){
   save();render();
 }
 const ordinal=n=>n+(['th','st','nd','rd'][(n%100-20)%10]||['th','st','nd','rd'][n%100]||'th');
+const cinePref=()=>{try{return localStorage.getItem('the-last-hour-cutscenes')==='off'?'off':'on'}catch(e){return 'on'}};
 function openMemory(i,replay){
   const era=S.era;ui.sheet=null;ui.memTab='story';clearTimeout(ui.cineT);
   const first=!era.viewed.includes(i);
   if(first){era.viewed.push(i);save()}
-  if(first||replay){ui.mem=null;ui.cine={i,k:0};render();ui.cineT=setTimeout(tickCine,beatDur());return}
+  if((first&&cinePref()==='on')||replay){ui.mem=null;ui.cine={i,k:0};render();ui.cineT=setTimeout(tickCine,beatDur());return}
   ui.mem={i};render();const el=document.querySelector('.memory');if(el) el.scrollTop=0;
 }
 /* Playback merges a memory's first two lines (the opener and the place) into one title slide:
@@ -4490,12 +4579,10 @@ function titleScreen(){
   <h1><i>A chronicle of</i>The Last Hour</h1></div><div class="tright">
   <p class="lede">Travel through time to name the dead. Every run is a new cast, a new web of families and grudges, and a new way for each of them to die.</p>
   <div class="stack">${canCont?`<button class="btn primary" data-act="continue">Continue your chronicle</button><button class="btn" data-act="new">Start a new chronicle</button>`:`<button class="btn primary" data-act="new">Start a chronicle</button>`}
-  <button class="linkbtn" data-act="rules">How to play</button>
-  <button class="linkbtn" data-act="tutorial">Tutorial: ${tutorialPref()==='on'?'On':'Off'}</button>
-  <button class="linkbtn" data-act="motion">Motion effects: ${{auto:'Auto',on:'On',off:'Off'}[motionPref()]}</button></div></div></div>`;
+  <button class="linkbtn" data-act="settings">Settings</button></div></div></div>`;
 }
 function hearts(){let s='';const run=S.run;for(let i=0;i<Math.max(run.hearts,START_HEARTS);i++) s+=HEART(i<run.hearts);return `<div class="hearts" aria-label="${run.hearts} hearts">${s}</div>`}
-function road(){return `<div class="road">${S.run.seq.map((k,i)=>`<span class="${i===S.run.idx?'now':''}">${i+1}. ${esc(ERAS[k].title.replace(/^The /,''))}</span>`).join('')}</div>`}
+function road(){return `<div class="road">${S.run.seq.map((k,i)=>`<span class="${i===S.run.idx?'now':''}">${i+1}. ${esc(((i<=S.run.idx&&S.run.scens&&S.run.scens[i])?eraE(k,S.run.scens[i]):ERAS[k]).title.replace(/^The /,''))}</span>`).join('')}</div>`}
 /* the era intro celebrates a quarters register: luck gets the fanfare, a relic gets the credit */
 function registerLine(era){
   const key=`<svg viewBox="0 0 24 24" width="30" height="30" aria-hidden="true"><circle cx="7.5" cy="12" r="4.5" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M12 12h10M18 12v4M21 12v3" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>`;
@@ -4787,7 +4874,7 @@ function recordsView(){
   let h=`<h2 class="section-h" style="margin-top:0">Where and when</h2><div class="note whenwhere"><b>${esc(E.title)}</b><br>${esc(E.when)}${ERA_CLOCK[era.key]?` · ${esc(ERA_CLOCK[era.key].date)}`:''}</div>`;
   if(era.findings&&era.findings.length) h+=`<h2 class="section-h">Findings</h2>`+era.findings.map(t=>`<div class="note">${fillTokens(t)}</div>`).join('');
   if(run.relics.includes('tree')){const c2f=[];era.f2c.forEach((c,f)=>c2f[c]=f);h+=`<h2 class="section-h">Family Tree</h2>`+era.kin.map(k=>{const a=c2f[k.a],b2=c2f[k.b];const w=k.type==='spouse'?'married to':k.type==='sibling'?'sibling of':'parent of';return `<div class="note">${chip(a)} ${w} ${chip(b2)}</div>`}).join('')}
-  h+=`<h2 class="section-h">The road</h2>${road()}<div class="stack" style="margin-top:8px"><button class="btn ghost" data-act="rules">How to play</button><button class="btn ghost debug" data-act="debugall">Debug: fill in every open answer</button><button class="btn ghost" data-act="abandon">Abandon this run</button></div>`;
+  h+=`<h2 class="section-h">The road</h2>${road()}<div class="stack" style="margin-top:8px"><button class="btn ghost" data-act="settings">Settings</button><button class="btn ghost debug" data-act="debugall">Debug: fill in every open answer</button><button class="btn ghost" data-act="abandon">Abandon this run</button></div>`;
   return h;
 }
 function modalView(){
@@ -4809,6 +4896,12 @@ function modalView(){
     <div class="close-row"><button class="btn primary" data-act="closemodal">Got it</button></div></div></div>`;
   if(m.kind==='pick'){const r=REW[m.tool];return `<div class="scrim" data-act="closemodal"><div class="sheet"><div class="grab"></div><h2 style="font-size:1.5rem">${esc(r.name)}</h2><p class="muted small">${esc(r.desc)} Choose a person.</p>
     <div class="pickgrid">${targetsFor(m.tool).map(f=>`<button data-act="target" data-f="${f}">${thumb(f,64)}<span class="pl">${labelHTML(f)}</span></button>`).join('')}</div><div class="close-row"><button class="btn ghost" data-act="closemodal">Cancel</button></div></div></div>`}
+  if(m.kind==='settings'){const row=(act,label,val,hint)=>`<button class="setrow" data-act="${act}"><span><b>${label}</b><small>${hint}</small></span><span class="setval">${val}</span></button>`;
+    return `<div class="scrim center-modal" data-act="closemodal"><div class="sheet setsheet" role="dialog" aria-label="Settings"><h2 class="section-h" style="margin-top:0">Settings</h2>
+      ${row('tutorial','Tutorial',tutorialPref()==='on'?'On':'Off','Tips the first time you meet each part of the game.')}
+      ${row('motion','Motion effects',{auto:'Auto',on:'On',off:'Off'}[motionPref()],'Animations in memories and menus. Auto follows your device.')}
+      ${row('cutscenes','Cutscenes',cinePref()==='on'?'On':'Off','Play each memory line by line the first time you open it.')}
+      <div class="close-row"><button class="btn primary" data-act="closemodal">Done</button></div></div></div>`}
   if(m.kind==='map'){const era=S.era,mp=window.LH_MAPS&&LH_MAPS[era.key]&&LH_MAPS[era.key][m.d];
     if(!mp) return `<div class="scrim center-modal" data-act="closemodal"><div class="sheet"><p>The map isn’t available.</p><div class="close-row"><button class="btn primary" data-act="closemodal">Close</button></div></div></div>`;
     const [fx,fy]=mp.from,[tx,ty]=mp.to,mx=(fx+tx)/2,my=(fy+ty)/2,dx=tx-fx,dy=ty-fy,bend=.18,cx=mx-dy*bend,cy=my+dx*bend;   // a gentle curve, like a route on an old chart
@@ -5050,6 +5143,8 @@ document.addEventListener('click',e=>{
     case 'fullscreen':if(window!==window.top){try{window.parent.postMessage('lh-fullscreen','*')}catch(e){}break}
       document.documentElement.requestFullscreen().then(()=>screen.orientation&&screen.orientation.lock&&screen.orientation.lock('landscape').catch(()=>{})).catch(()=>{}).finally(()=>render());break;
     case 'tutorial':{const on=tutorialPref()!=='on';try{localStorage.setItem('the-last-hour-tutorial',on?'on':'off');if(on) localStorage.removeItem(TIP_KEY)}catch(e){}render();break}
+    case 'settings':ui.modal={kind:'settings'};render();break;
+    case 'cutscenes':{try{localStorage.setItem('the-last-hour-cutscenes',cinePref()==='on'?'off':'on')}catch(e){}render();break}
     case 'motion':{const n={auto:'on',on:'off',off:'auto'}[motionPref()];try{localStorage.setItem('the-last-hour-motion',n)}catch(e){}applyMotion();render();break}
     case 'enter':S.screen='play';S.boon={left:((S.boon&&S.boon.left)||0)+1,offer:null,start:true};openBoon();save();render();window.scrollTo(0,0);break;   // every era opens with a relic pick
     case 'tab':ui.tab=b.dataset.tab;render();window.scrollTo(0,0);break;
