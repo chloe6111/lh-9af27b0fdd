@@ -9,7 +9,7 @@
 /* Live site: the page itself can be cached for a while after a publish, while maps.js etc. come fresh, so an old page
    could show new data. version.txt holds the build stamp; if it differs, load the page again under a new URL.
    BUILD stays 'dev' in the project; stamp_build.py writes the stamp into dist/index.html and dist/version.txt. */
-(function(){var BUILD='20260928001331';if(BUILD==='dev'||window!==window.top||!window.fetch||location.protocol==='file:') return;
+(function(){var BUILD='20260928083840';if(BUILD==='dev'||window!==window.top||!window.fetch||location.protocol==='file:') return;
   fetch('version.txt?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.ok?r.text():''}).then(function(v){
     v=(v||'').trim();if(!v||v===BUILD) return;
     try{var k='lh-build-'+v;if(sessionStorage.getItem(k)) return;sessionStorage.setItem(k,'1')}catch(e){return}
@@ -888,6 +888,7 @@ html.desk .cinecap.sound{font-size:1.65rem}
 /* ---- clock times on cards; unwatched people are blurred until their scene is seen ---- */
 .pbadge{position:absolute;top:6px;z-index:2;background:rgba(6,5,6,.8);border:1px solid #4a4538;color:#f3ecd8;font:700 12px/1 var(--num);font-variant-numeric:lining-nums tabular-nums;padding:4px 7px;border-radius:999px;letter-spacing:.02em;pointer-events:none;transform:none;white-space:nowrap}
 .pbadge.pnum{left:6px}.pbadge.ptime{right:6px}
+.pbadge.pname{max-width:calc(100% - 62px);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;letter-spacing:0}
 .bust,.membust,.cport,.tface,.pcard{position:relative}
 .tface .pbadge{top:4px;font-size:10px;padding:3px 5px}.tface .pbadge.pnum{left:4px}.tface .pbadge.ptime{right:4px}
 .mclock{color:#d8b86a;font-weight:700;font-family:var(--num);font-variant-numeric:lining-nums}
@@ -2143,7 +2144,7 @@ const DEATHS={
     'mauled_dog','mauled_shark','drown_ocean','drown_pool','drown_bath','drown_sink','drown_toilet','fell_over','fell_stairs',
     'crush_chandelier','crush_vehicle','crush_cargo','crush_machine','blast_boiler','blast_bomb','burned','scalded','electro','gassed','froze','exhausted','illness','heart','expired','sui_gun','sui_jump'],
   villa:['sword','knifed','cleaver','hammer','clubbed','decap','speared','strangled','hanged','shot_arrow','poisoned',
-    'mauled_dog','mauled_bear','mauled_tiger','mauled_elephant','mauled_hippo','trampled_elephant','drown_pool','drown_fountain','drown_ocean',
+    'mauled_dog','mauled_bear','mauled_tiger','mauled_elephant','mauled_hippo','drown_pool','drown_fountain','drown_ocean',
     'fell_stairs','fell_well','crush_stones','crush_tree','crush_vehicle','exploded','burned','illness','heart','bled','expired','sui_knife','sui_spear','sui_jump']
 };
 const DEATH_ITEMS={medieval:{knifed:'dagger',clubbed:'mace',decap:'axe'},manor:{clubbed:'candlestick'},liner:{clubbed:'shovel'},villa:{sword:'greatsword',knifed:'dagger',decap:'gladius',clubbed:'cudgel'}};
@@ -3923,7 +3924,12 @@ const openFaces=()=>[...Array(S.era.n).keys()].filter(f=>!S.era.sealed[f]);
 function needsKiller(id){const c=id&&causeOf(E_(),id);return !!(c&&(c.weapon||c.either))}
 function isEither(id){const c=id&&causeOf(E_(),id);return !!(c&&c.either)}
 function isFilled(f){const a=S.era.assign[f];return a.c!=null&&!!a.cause&&(!needsKiller(a.cause)||a.k!=null)}
-function isRight(f){const era=S.era,a=era.assign[f],kf=era.killerOf[f],acc=era.accept&&era.accept[f];const causeOK=acc?acc.includes(a.cause):a.cause===era.deathCause[f];return a.c===era.f2c[f]&&causeOK&&(kf==null?(!isEither(a.cause)||a.k==='acc'):a.k===era.f2c[kf])}
+/* deaths close enough that any of them counts as right (plus whatever ambiguous evidence allowed) */
+const SIMILAR=[['crush_stones','crush_cargo','crush_beam','crush_chandelier','crush_tree'],
+  ['drown_bath','drown_sink','drown_toilet','drown_trough','drown_fountain'],['drown_pool','drown_ocean','drown_lake','drown_moat'],
+  ['blast_gas','blast_bomb','blast_keg','blast_boiler','exploded']];
+const similarTo=id=>(SIMILAR.find(g=>g.includes(id))||[id]);
+function isRight(f){const era=S.era,a=era.assign[f],kf=era.killerOf[f],acc=era.accept&&era.accept[f],truth=era.deathCause[f];const causeOK=a.cause===truth||(acc&&acc.includes(a.cause))||similarTo(truth).includes(a.cause);return a.c===era.f2c[f]&&causeOK&&(kf==null?(!isEither(a.cause)||a.k==='acc'):a.k===era.f2c[kf])}
 
 /* ---------- ASCII art ---------- */
 const ART=new Map();
@@ -4390,7 +4396,7 @@ function clockText(min,long){
 }
 const sceneClock=(era,i,long)=>clockText(eraTimes(era)[i],long);
 /* portrait badges, one style everywhere: "#N" top left, and the time of their memory top right once it has been watched */
-const numBadge=f=>`<span class="pbadge pnum">#${f+1}</span>`;
+const numBadge=f=>{const era=S.era;if(era&&era.sealed&&era.sealed[f]){const c=era.chars[era.f2c[f]];return `<span class="pbadge pnum pname" title="${esc(c.first+' '+c.sur)}">${esc(c.first+' '+c.sur)}</span>`}return `<span class="pbadge pnum">#${f+1}</span>`};   // sealed: their name
 function timeBadge(f){const era=S.era,i=era.pos[f];return i!=null&&era.viewed.includes(i)?`<span class="pbadge ptime" title="When their memory happens">${sceneClock(era,i)}</span>`:''}
 const badges=f=>numBadge(f)+timeBadge(f);
 /* The Dead's order: by number (the default on entering an era) or by time. Sorting by time orders the memories you have
