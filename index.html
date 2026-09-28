@@ -9,7 +9,7 @@
 /* Live site: the page itself can be cached for a while after a publish, while maps.js etc. come fresh, so an old page
    could show new data. version.txt holds the build stamp; if it differs, load the page again under a new URL.
    BUILD stays 'dev' in the project; stamp_build.py writes the stamp into dist/index.html and dist/version.txt. */
-(function(){var BUILD='20260928140005';if(BUILD==='dev'||window!==window.top||!window.fetch||location.protocol==='file:') return;
+(function(){var BUILD='20260928141319';if(BUILD==='dev'||window!==window.top||!window.fetch||location.protocol==='file:') return;
   fetch('version.txt?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.ok?r.text():''}).then(function(v){
     v=(v||'').trim();if(!v||v===BUILD) return;
     try{var k='lh-build-'+v;if(sessionStorage.getItem(k)) return;sessionStorage.setItem(k,'1')}catch(e){return}
@@ -993,6 +993,10 @@ html.nomotion #tipov .tiphole{animation:none}
 .ptile.notp.on{background:#5a241e;border-color:#c0594a}
 .gnadd{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:6px 0 4px}.gnadd .gnpick{flex:none;max-width:45%;overflow:hidden}.gnadd .gnpick .ntt{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .gnadd .gnin{flex:1 1 180px;min-width:0}.gnname{color:#e8c870;font-weight:600;margin-right:4px}
+.trow{display:flex;gap:18px;justify-content:center;flex-wrap:wrap}
+.seedform{display:flex;gap:8px;margin:10px 0}.seedin{flex:1;min-width:0;min-height:40px;padding:6px 14px;border-radius:10px;border:1px solid #4a4538;background:#12110d;color:#f3ecd8;font:700 1.2rem var(--num);letter-spacing:.18em;text-transform:uppercase}
+.seedsheet{max-width:460px}.seedrow{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin:8px 0 4px}.seedcode{font-family:var(--num);letter-spacing:.12em;color:#e8c870}
+.seedline{margin:0 0 6px}
 /* typing a note on a touch screen: the box sits at the top, above the on-screen keyboard */
 html.kbtyping .cnadd,html.kbtyping .gnadd{position:fixed!important;top:10px;left:12px;right:12px;z-index:400;margin:0!important;padding:10px;border-radius:14px;background:#1b1812;border:1.5px solid #d8b86a;box-shadow:0 10px 40px rgba(0,0,0,.7);display:flex;gap:8px}
 html.kbtyping .cnadd .cnin,html.kbtyping .gnadd .cnin{flex:1;font-size:16px}
@@ -4183,14 +4187,32 @@ function migrateSave(sv){
   return sv;
 }
 function clearSave(){try{localStorage.removeItem(KEY)}catch(e){}}
-function newRun(first){
+/* ---------- seeds: a short code decides the whole road (eras, scenarios, casts, deaths, clues, relic offers) ----------
+   While an era is built, Math.random is swapped for a generator seeded by the code, era and step, so every random
+   choice in generation repeats exactly. Relic effects on later eras still apply, so later eras match only when the
+   same relics were taken. GEN_VERSION: bump it whenever generation or story text changes, so an old seed warns. */
+const GEN_VERSION=1,SEED_ABC='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+function withSeed(key,fn){const o=Math.random;Math.random=mulberry(hashStr(key));try{return fn()}finally{Math.random=o}}
+const randomCode=()=>{let c='';for(let i=0;i<6;i++) c+=SEED_ABC[Math.floor(Math.random()*SEED_ABC.length)];return c};
+const cleanCode=t=>String(t||'').toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,8);
+const todayStr=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
+const dailyCode=d=>withSeed('daily|'+d,randomCode);
+const dailyLabel=d=>{const [y,m,dd]=d.split('-').map(Number);return new Date(y,m-1,dd).toLocaleDateString(undefined,{day:'numeric',month:'long',year:'numeric'})};
+function seqFor(code){return withSeed('seq|'+code,()=>{const keys=Object.keys(ERAS),seq=[];for(let i=0;i<ERA_COUNT;i++){let k;do{k=R.pick(keys)}while(k===seq[i-1]);seq.push(k)}return seq})}
+const genEraSeeded=(run,idx)=>run.seed?withSeed(`era|${run.seed}|${idx}`,()=>genEra(run.seq[idx],idx,run)):genEra(run.seq[idx],idx,run);
+function seedLink(code){const L=(()=>{try{return window.top.location}catch(e){return location}})();return `${L.origin}${L.pathname}?seed=${code}&gv=${GEN_VERSION}`}
+async function shareSeed(){const run=S.run,url=seedLink(run.seed),text=run.daily?`The Last Hour · Daily chronicle, ${dailyLabel(run.daily)}`:`The Last Hour · chronicle ${run.seed}`;
+  try{if(navigator.share&&matchMedia('(pointer:coarse)').matches){await navigator.share({title:'The Last Hour',text,url});return}}catch(e){if(e&&e.name==='AbortError') return}
+  try{await navigator.clipboard.writeText(`${text}\n${url}`);toast('Link copied. Anyone who opens it plays this same chronicle.')}catch(e){toast('Seed: '+run.seed)}}
+function newRun(first,opt={}){
   ui.deadPage=0;ui.sort='num-asc';
-  const keys=Object.keys(ERAS),seq=[];
-  for(let i=0;i<ERA_COUNT;i++){let k;if(i===0&&first&&ERAS[first]) k=first;else do{k=R.pick(keys)}while(k===seq[i-1]);seq.push(k)}
-  S={screen:'intro',run:{tutorial:tutorialPref()==='on',seq,idx:0,hearts:START_HEARTS,relics:[],charges:{},next:{},four:false,fails:0,sealed:0,anchorUsed:false},era:null,offer:null};
+  // the era picker: find a seed whose road starts there, so the code alone still says everything
+  let code=opt.code||randomCode(),seq=seqFor(code);
+  if(!opt.code&&first&&ERAS[first]){let g=0;while(seq[0]!==first&&g++<400){code=randomCode();seq=seqFor(code)}}
+  S={screen:'intro',run:{seed:code,daily:opt.daily||null,shared:!!opt.shared||!!opt.daily,tutorial:tutorialPref()==='on',seq,idx:0,hearts:START_HEARTS,relics:[],charges:{},next:{},four:false,fails:0,sealed:0,anchorUsed:false},era:null,offer:null};
   DEBUG_START_RELICS.forEach(id=>{const r=REW[id];if(!r) return;   // before the first era is made, so Parish Copy applies to it too
     if(r.kind==='charge') S.run.charges[id]=(S.run.charges[id]||0)+(r.uses||1);else if(r.kind==='relic'&&!S.run.relics.includes(id)) S.run.relics.push(id)});
-  S.era=genEra(seq[0],0,S.run);ui.tab='gather';ui.mem=null;save();render();window.scrollTo(0,0);
+  S.era=genEraSeeded(S.run,0);ui.tab='gather';ui.mem=null;save();render();window.scrollTo(0,0);
 }
 const E_=()=>eraE(S.era.key,S.era.scen);
 const charOfFace=f=>S.era.chars[S.era.f2c[f]];
@@ -4294,13 +4316,18 @@ const lastEra=()=>S.run.idx===ERA_COUNT-1;
 const usedThisEra=id=>+(S.era.used[id]||0);   // older saves stored true for "used"
 const usesLeft=id=>Math.max(0,(PER_ERA[id]||0)-usedThisEra(id));
 function makeOffer(opt={}){
+  const rs=S.run;if(rs&&rs.seed){rs.offerN=(rs.offerN||0)+1;return withSeed(`offer|${rs.seed}|${rs.idx}|${rs.offerN}`,()=>makeOfferRaw(opt))}
+  return makeOfferRaw(opt);
+}
+function makeOfferRaw(opt={}){
   const run=S.run,cnt=S.era&&S.era.gambler?4:3;   // Gambler's Coin: four choices for every offer in that era
   const legOdds=run.relics.includes('blind')?.10:.05;
   const usable=r=>(r.kind==='charge'&&!['steady','slate'].includes(r.id))||!!r.perEra;   // relics with a Use button
-  const avail=REWARDS.filter(r=>!(run.tutorial&&(r.id==='blind'||r.id==='gambler'))&&!(run.tutorial&&opt.start&&!usable(r))&&!(r.kind==='relic'&&run.relics.includes(r.id))&&!(opt.noInstant&&(r.kind==='instant'||r.expires==='era'))),out=[];let g=0;
+  const tut=run.tutorial&&!run.shared;
+  const avail=REWARDS.filter(r=>!(tut&&(r.id==='blind'||r.id==='gambler'))&&!(tut&&opt.start&&!usable(r))&&!(r.kind==='relic'&&run.relics.includes(r.id))&&!(opt.noInstant&&(r.kind==='instant'||r.expires==='era'))),out=[];let g=0;
   while(out.length<cnt&&g++<400){const roll=Math.random(),rar=roll<legOdds?'l':roll<legOdds+.25?'r':'c';const pool=avail.filter(r=>r.rar===rar&&!out.includes(r.id));if(pool.length) out.push(R.pick(pool).id)}
   const lasting=id=>['relic','next','geneal'].includes(REW[id].kind);
-  if(!out.some(lasting)&&!(run.tutorial&&opt.start)){const pool=avail.filter(r=>lasting(r.id)&&r.rar!=='l'&&!out.includes(r.id));if(pool.length) out[R.int(0,out.length-1)]=R.pick(pool).id}
+  if(!out.some(lasting)&&!(tut&&opt.start)){const pool=avail.filter(r=>lasting(r.id)&&r.rar!=='l'&&!out.includes(r.id));if(pool.length) out[R.int(0,out.length-1)]=R.pick(pool).id}
   return out;
 }
 /* Genealogist's Ledger: mark three more people who share a family, one colour per family */
@@ -4372,7 +4399,7 @@ function takeReward(id){
   const run=S.run;applyReward(id);
   run.idx++;S.offer=null;S.boon=null;ART.clear();ui.deadPage=0;ui.sort='num-asc';
   run.hearts=Math.max(run.hearts,START_HEARTS);   // every new era starts at full health
-  S.era=genEra(run.seq[run.idx],run.idx,run);
+  S.era=genEraSeeded(run,run.idx);
   S.screen='intro';ui.tab='gather';save();render();window.scrollTo(0,0);
 }
 function openBoon(){
@@ -4616,7 +4643,8 @@ function titleScreen(){
   <h1><i>A chronicle of</i>The Last Hour</h1></div><div class="tright">
   <p class="lede">Travel through time to name the dead. Every run is a new cast, a new web of families and grudges, and a new way for each of them to die.</p>
   <div class="stack">${canCont?`<button class="btn primary" data-act="continue">Continue your chronicle</button><button class="btn" data-act="new">Start a new chronicle</button>`:`<button class="btn primary" data-act="new">Start a chronicle</button>`}
-  <button class="linkbtn" data-act="settings">Settings</button></div></div></div>`;
+  <button class="btn ghost" data-act="daily">Daily chronicle · ${esc(dailyLabel(todayStr()))}</button>
+  <div class="trow"><button class="linkbtn" data-act="seedenter">Play a seed</button><button class="linkbtn" data-act="settings">Settings</button></div></div></div></div>`;
 }
 function hearts(){let s='';const run=S.run;for(let i=0;i<Math.max(run.hearts,START_HEARTS);i++) s+=HEART(i<run.hearts);return `<div class="hearts" aria-label="${run.hearts} hearts">${s}</div>`}
 function road(){return `<div class="road">${S.run.seq.map((k,i)=>`<span class="${i===S.run.idx?'now':''}">${i+1}. ${esc(((i<=S.run.idx&&S.run.scens&&S.run.scens[i])?eraE(k,S.run.scens[i]):ERAS[k]).title.replace(/^The /,''))}</span>`).join('')}</div>`}
@@ -4640,6 +4668,7 @@ function introScreen(){
   const era=S.era,E=E_(),run=S.run;
   return `<div class="wrap screen intro-screen"><div class="ileft"><div class="kicker">Era ${run.idx+1} of ${ERA_COUNT}</div><h1>${esc(E.title)}</h1><p class="muted"><i>${esc(E.when)}</i></p>${eraClock(era)?`<p class="idate">${esc(eraClock(era).date)}</p>`:''}</div><div class="iright"><p>${esc(E.intro)}</p>
   ${registerLine(era)}
+  ${run.seed?`<p class="seedline small light-muted">${run.daily?`Daily chronicle · ${esc(dailyLabel(run.daily))} · `:''}Seed ${esc(run.seed)}</p>`:''}
   <p>The Reliquary holds <b>${era.n} last moments</b>. The manifest lists ${era.n} names.${era.gambler?' The Gambler’s Coin has hidden half the roles on the manifest, and every relic offer this era has four choices.':''}</p>
   ${road()}<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:8px">${hearts()}<button class="btn primary" data-act="enter">Open the Reliquary</button></div></div></div>`;
 }
@@ -4933,7 +4962,8 @@ function gnamePickerView(){
 }
 function recordsView(){
   const run=S.run,era=S.era,E=E_();
-  let h=`<h2 class="section-h" style="margin-top:0">Where and when</h2><div class="note whenwhere"><b>${esc(E.title)}</b><br>${esc(E.when)}${eraClock(era)?` · ${esc(eraClock(era).date)}`:''}</div>`+recordsNotes();
+  let h=`<h2 class="section-h" style="margin-top:0">Where and when</h2><div class="note whenwhere"><b>${esc(E.title)}</b><br>${esc(E.when)}${eraClock(era)?` · ${esc(eraClock(era).date)}`:''}</div>`
+    +(run.seed?`<div class="seedrow"><span>${run.daily?`Daily chronicle · ${esc(dailyLabel(run.daily))} · `:''}Seed <b class="seedcode">${esc(run.seed)}</b></span><button class="btn ghost" data-act="shareseed">Share this chronicle</button></div>`:'')+recordsNotes();
   if(era.findings&&era.findings.length) h+=`<h2 class="section-h">Findings</h2>`+era.findings.map(t=>`<div class="note">${fillTokens(t)}</div>`).join('');
   if(run.relics.includes('tree')){const c2f=[];era.f2c.forEach((c,f)=>c2f[c]=f);h+=`<h2 class="section-h">Family Tree</h2>`+era.kin.map(k=>{const a=c2f[k.a],b2=c2f[k.b];const w=k.type==='spouse'?'married to':k.type==='sibling'?'sibling of':'parent of';return `<div class="note">${chip(a)} ${w} ${chip(b2)}</div>`}).join('')}
   h+=`<h2 class="section-h">The road</h2>${road()}<div class="stack" style="margin-top:8px"><button class="btn ghost" data-act="settings">Settings</button><button class="btn ghost debug" data-act="debugall">Debug: fill in every open answer</button><button class="btn ghost" data-act="abandon">Abandon this run</button></div>`;
@@ -4958,6 +4988,13 @@ function modalView(){
     <div class="close-row"><button class="btn primary" data-act="closemodal">Got it</button></div></div></div>`;
   if(m.kind==='pick'){const r=REW[m.tool];return `<div class="scrim" data-act="closemodal"><div class="sheet"><div class="grab"></div><h2 style="font-size:1.5rem">${esc(r.name)}</h2><p class="muted small">${esc(r.desc)} Choose a person.</p>
     <div class="pickgrid">${targetsFor(m.tool).map(f=>`<button data-act="target" data-f="${f}">${thumb(f,64)}<span class="pl">${labelHTML(f)}</span></button>`).join('')}</div><div class="close-row"><button class="btn ghost" data-act="closemodal">Cancel</button></div></div></div>`}
+  if(m.kind==='seed'){const old=m.gv&&+m.gv!==GEN_VERSION;
+    return `<div class="scrim center-modal" data-act="closemodal"><div class="sheet seedsheet" role="dialog" aria-label="Play a seed"><h2 class="section-h" style="margin-top:0">${m.link?'A shared chronicle':'Play a seed'}</h2>
+      <p class="muted small">${m.link?'Someone sent you this chronicle. You’ll get the same eras, people and deaths they did (later eras match if you pick the same relics).':'Type a seed someone shared. Everyone who plays the same seed gets the same eras, people and deaths.'}</p>
+      ${old?`<p class="small" style="color:#e8a070">This seed was made with an older version of the game, so this chronicle will be different from theirs.</p>`:''}
+      <form class="seedform"><input class="seedin" maxlength="8" placeholder="e.g. 7K2QXM" value="${esc(m.code||'')}" autocomplete="off" autocapitalize="characters" spellcheck="false"><button type="submit" class="btn primary">Play</button></form>
+      ${S&&S.screen&&S.screen!=='end'||(load()&&load().screen!=='end')?`<p class="small light-muted">This replaces the chronicle you have in progress.</p>`:''}
+      <div class="close-row"><button class="btn ghost" data-act="closemodal">Cancel</button></div></div></div>`}
   if(m.kind==='settings'){const row=(act,label,val,hint)=>`<button class="setrow" data-act="${act}"><span><b>${label}</b><small>${hint}</small></span><span class="setval">${val}</span></button>`;
     return `<div class="scrim center-modal" data-act="closemodal"><div class="sheet setsheet" role="dialog" aria-label="Settings"><h2 class="section-h" style="margin-top:0">Settings</h2>
       ${row('tutorial','Tutorial',tutorialPref()==='on'?'On':'Off','Tips the first time you meet each part of the game.')}
@@ -5033,7 +5070,8 @@ function rewardScreen(){
 function endScreen(){
   const run=S.run,won=S.won;
   return `<div class="wrap screen end-screen"><div class="kicker">${won?'The chronicle is complete':'The chronicle ends'}</div><h1>${won?'Every name returned':'Lost to the hour'}</h1>
-  <p>${won?'You named the dead of every era. The Reliquary goes quiet.':`Your last heart gave out in ${esc(ERAS[run.seq[run.idx]].title)}.`}</p>
+  <p>${won?'You named the dead of every era. The Reliquary goes quiet.':`Your last heart gave out in ${esc(S.era?E_().title:ERAS[run.seq[run.idx]].title)}.`}</p>
+  ${run.seed?`<p class="small muted">${run.daily?`Daily chronicle · ${esc(dailyLabel(run.daily))} · `:''}Seed <b>${esc(run.seed)}</b> · <button class="linkbtn" data-act="shareseed">Share this chronicle</button></p>`:''}
   <div class="stats"><div><b>${won?ERA_COUNT:run.idx}</b><span>eras sealed</span></div><div><b>${run.sealed}</b><span>fates named</span></div><div><b>${run.fails}</b><span>silences</span></div></div>
   ${run.relics.length?`<p class="small muted">Relics carried: ${run.relics.map(id=>esc(REW[id].name)).join(', ')}.</p>`:''}
   ${!won?`<h2 class="section-h">What really happened</h2>${DESK?`<div class="fatesv" data-page="grid">${fateList()}</div>`:fateList()}`:''}
@@ -5211,6 +5249,9 @@ document.addEventListener('click',e=>{
       document.documentElement.requestFullscreen().then(()=>screen.orientation&&screen.orientation.lock&&screen.orientation.lock('landscape').catch(()=>{})).catch(()=>{}).finally(()=>render());break;
     case 'tutorial':{const on=tutorialPref()!=='on';try{localStorage.setItem('the-last-hour-tutorial',on?'on':'off');if(on) localStorage.removeItem(TIP_KEY)}catch(e){}render();break}
     case 'settings':ui.modal={kind:'settings'};render();break;
+    case 'daily':{const d=todayStr();ui.modal=null;ART.clear();newRun(null,{code:dailyCode(d),daily:d});break}
+    case 'seedenter':ui.modal={kind:'seed'};render();setTimeout(()=>{const i=document.querySelector('.seedin');if(i) i.focus()},50);break;
+    case 'shareseed':shareSeed();break;
     case 'cutscenes':{try{localStorage.setItem('the-last-hour-cutscenes',cinePref()==='on'?'off':'on')}catch(e){}render();break}
     case 'motion':{const n={auto:'on',on:'off',off:'auto'}[motionPref()];try{localStorage.setItem('the-last-hour-motion',n)}catch(e){}applyMotion();render();break}
     case 'enter':S.screen='play';S.boon={left:((S.boon&&S.boon.left)||0)+1,offer:null,start:true};openBoon();save();render();window.scrollTo(0,0);break;   // every era opens with a relic pick
@@ -5277,13 +5318,19 @@ function kbCheck(){const a=document.activeElement;document.documentElement.class
 document.addEventListener('focusin',kbCheck);document.addEventListener('focusout',()=>setTimeout(kbCheck,0));
 document.addEventListener('submit',e=>{const fm=e.target.closest('.cnadd');if(!fm) return;e.preventDefault();addNote(+fm.dataset.f,fm.querySelector('.cnin'))});
 document.addEventListener('input',e=>{if(e.target.matches('.gnin')){ui.gDraft=Object.assign({},ui.gDraft,{v:e.target.value});return}if(e.target.matches('.cnin')) ui.noteDraft={f:+e.target.dataset.f,v:e.target.value}});
+document.addEventListener('submit',e=>{const fm=e.target.closest('.seedform');if(!fm) return;e.preventDefault();
+  const code=cleanCode(fm.querySelector('.seedin').value);if(code.length<4){toast('That seed doesn’t look right.');return}
+  ui.modal=null;ART.clear();newRun(null,{code,shared:true})});
 document.addEventListener('submit',e=>{const fm=e.target.closest('.gnadd');if(!fm) return;e.preventDefault();
   const t=fm.querySelector('.gnin').value.trim().slice(0,GNOTE_LEN),c=ui.gDraft&&ui.gDraft.c!=null&&ui.gDraft.c!==''?ui.gDraft.c:'';if(!t) return;
   const notes=S.era.gnotes=S.era.gnotes||[];if(notes.length>=GNOTE_MAX) return;notes.push({c:c===''?null:+c,t});ui.gDraft=null;save();render()});
 // pressing Add must not blur the box first: on phones that closes the keyboard, the layout jumps and the tap misses the button
 document.addEventListener('pointerdown',e=>{if(e.target.closest('.cnbtn')&&document.activeElement&&document.activeElement.matches('.cnin')) e.preventDefault()});
 /* boot */
-(function(){const saved=load();S=null;if(saved&&saved.screen==='end') clearSave();render()})();
+(function(){const saved=load();S=null;if(saved&&saved.screen==='end') clearSave();
+  const q=new URLSearchParams(location.search),code=cleanCode(q.get('seed'));
+  if(code.length>=4){ui.modal={kind:'seed',link:true,code,gv:q.get('gv')};try{const u=new URL(location.href);u.searchParams.delete('seed');u.searchParams.delete('gv');history.replaceState(null,'',u.href);if(window.top!==window){const t=new URL(window.top.location.href);t.searchParams.delete('seed');t.searchParams.delete('gv');window.top.history.replaceState(null,'',t.href)}}catch(e){}}
+  render()})();
 
 </script>
 </body>
