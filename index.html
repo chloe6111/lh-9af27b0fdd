@@ -973,8 +973,8 @@ html.nomotion #tipov .tiphole{animation:none}
 .dmap .herelbl{font:700 22px Georgia,serif;fill:#fff5e0;paint-order:stroke;stroke:#14222a;stroke-width:5px}
 .dmap .star{fill:#f0c850;stroke:#5a3c10;stroke-width:2.5;stroke-linejoin:round}
 .mapsheet .close-row{margin-top:10px!important}
-@media (orientation:landscape) and (max-height:540px){.sheet.mapsheet{width:auto;max-width:none;height:auto;padding:0;background:none;box-shadow:none;border:0;display:flex;align-items:center;justify-content:center}.mapsheet .dmap{height:calc(100dvh - 16px);width:auto;aspect-ratio:4/3;border-radius:12px}.mapsheet .close-row{display:none}}
-.mapsheet{cursor:pointer}
+@media (orientation:landscape) and (max-height:540px){.sheet.mapsheet{width:auto;max-width:none;height:auto;padding:0;background:none;box-shadow:none;border:0;display:flex;align-items:center;justify-content:center}.scrim:has(> .mapsheet){padding:8px}.mapsheet .dmap{height:min(calc(100dvh - 20px),calc((100vw - 24px)*.75));width:auto;aspect-ratio:4/3;border-radius:12px}.mapsheet .close-row{display:none}}
+.mapsheet{cursor:pointer}.scrim:has(> .mapsheet){overflow:hidden}
 html.desk .sheet.mapsheet{width:auto;max-width:none}html.desk .mapsheet .dmap{height:min(680px,78vh);width:auto;aspect-ratio:4/3}
 .lshort{display:none}
 /* phones held sideways: short labels so the four memory buttons always fit (narrow screens like a Fold), and no ✕ (Back to the dead does it) */
@@ -1089,7 +1089,7 @@ html.nomotion .cports .cport,html.nomotion .cports .cfull img,html.nomotion .cin
 <div id="rotate" aria-hidden="true"><div><div class="rotphone"></div><p>Turn your phone sideways to play</p></div></div>
 <script src="pieces.js?v=4c6edf9d"></script>
 <script src="stacker.js?v=4c6edf9d"></script>
-<script src="maps.js?v=0201e311"></script>
+<script src="maps.js?v=50a871d3"></script>
 <script src="relic_icons.js?v=d9b589be"></script>
 <script>
 
@@ -1385,7 +1385,7 @@ const ERA_CFG={
   medieval:{
     causes:['axed','burned','clawed','clubbed','crush_beast','crush_stones','decap','drowned','fell_walls','fell_stairs','illness','sword','knifed','poisoned','shot_arrow','shot_cannon','speared','strangled','hooves','sui_knife','sui_noose','torn','expired'],
     items:{knifed:'dagger',clubbed:'mace',decap:'axe'},beasts:{clawed:'hound',torn:'hound',crush_beast:'horse',hooves:'horse'},
-    alive:['Wales','France','the Holy Land','Glastonbury Abbey','London'],
+    alive:['Ireland','France','the Holy Land','Norway','London'],
     ambient:['Distant shouting from the walls.','Timber cracks and burns somewhere close.','A bell clangs, wild and unsteady.','Hooves clatter on stone.','Siege stones thud against the walls.'],
     say:['Help me! For God’s sake, help me!','Mother of God, not like this…','Get back! Get away from me!','Run! They are inside the walls!','Hold the door! Hold it!'],
     call:['Get down!','Behind you!','Over here, quickly!','Run!'],
@@ -1395,7 +1395,7 @@ const ERA_CFG={
   manor:{
     causes:['burned','clawed','clubbed','crush_beam','crush_beast','drowned','electro','exploded','expired','fell_stairs','froze','illness','knifed','poisoned','shot_gun','strangled','hooves','sui_gun','sui_noose','torn'],
     items:{clubbed:'candlestick'},beasts:{clawed:'hound',torn:'hound',crush_beast:'horse',hooves:'horse'},
-    alive:['London','America','Paris','Edinburgh','Bombay'],
+    alive:['London','America','Paris','Venice','Mumbai'],
     ambient:['A string quartet falters and stops.','Glass shatters somewhere upstairs.','Fire crackles behind a closed door.','A clock begins to strike midnight.','Hounds bay in the kennels.'],
     say:['Help! Someone, please help!','Good Lord… the stairs are burning!','Get away from me!','Fire! Fire in the east wing!','Let me out! The door is locked!'],
     call:['Get down!','This way, quickly!','Behind you!','Don’t go in there!'],
@@ -1405,7 +1405,7 @@ const ERA_CFG={
   liner:{
     causes:['burned','clubbed','crush_cargo','crush_machine','drowned','eaten','electro','exploded','expired','fell_over','fell_stairs','froze','illness','knifed','poisoned','shot_gun','strangled','sui_gun','torn'],
     items:{clubbed:'shovel'},beasts:{eaten:'shark',torn:'shark'},
-    alive:['New York','Halifax','Southampton','Queenstown','Boston'],
+    alive:['Ireland','Nova Scotia','Long Island','London','Boston'],
     ambient:['Steel groans deep in the hull.','Seawater roars down a corridor.','The ship’s whistle shrieks.','A band plays on, very far away.','Lifeboat davits squeal.'],
     say:['Help! Help us!','God help us, the water’s coming in!','Get away from me!','Let me into the boat!','Where is my family?'],
     call:['Grab my hand!','Jump!','Over here!','Get up the stairs!'],
@@ -1821,22 +1821,22 @@ function buildStory(s,E,era){
 /* ---------- escape memories: survivors' destinations are only ever hinted ---------- */
 const DEST_HINTS={
   medieval:{
-    'Wales':{say:['Make for the mountains, past Offa’s Dyke. Nobody will follow into Gwynedd.','My mother’s people in the valleys beyond the Dyke will hide me.','Up into the Black Mountains, where the English writ does not run.'],obj:['a token stamped with a red dragon','a letter addressed to a cousin in Gwynedd']},
+    'Ireland':{say:['West to Milford Haven, then a boat across the Irish Sea.','Dublin. The Pale is far enough from the March.','My mother’s kin in Leinster will take me in.'],obj:['a merchant’s token from Waterford','a letter addressed to a cousin in Dublin']},
     'France':{say:['There’s a cog in the harbour bound across the Channel for Calais.','The French king will pay well for what I know.','Across the narrow sea, to Normandy.'],obj:['a safe-conduct sealed with golden fleurs-de-lis','a purse of coins stamped with the French king’s face']},
     'the Holy Land':{say:['I’ll take the cross and walk to Jerusalem to pay for this.','To the Sepulchre. God will forgive me there.','East, with the pilgrims, to where Christ walked.'],obj:['a pilgrim’s palm badge','a pilgrim’s staff with a cross stitched on the sleeve']},
-    'Glastonbury Abbey':{say:['The black monks at Glastonbury will grant sanctuary.','South, over the Severn, to the Isle of Apples.','The abbot keeps King Arthur’s bones. He will keep me too.'],obj:['a pilgrim’s badge of the holy thorn','a letter of sanctuary from the abbot of Glastonbury']},
+    'Norway':{say:['A Hanse cog out of Bristol, bound for Bergen.','North, over the sea, to the land of the fjords.','The Norse king’s court will hide a man who fought for no one.'],obj:['a Bergen stockfish trader’s tally stick','a silver penny of the Norse king Magnus']},
     'London':{say:['Down the Thames. I can lose myself in Cheapside.','London Bridge by the new moon.','The Tower’s shadow is safer than this place.'],obj:['a merchant’s token from Cheapside','a pass for London Bridge']}},
   manor:{
     'London':{say:['The night train to King’s Cross, and nobody will find me.','Lodgings in Whitechapel. Nobody asks questions there.','The Thames embankment, and then I disappear.'],obj:['a railway ticket to King’s Cross','a card for lodgings off the Strand']},
     'America':{say:['Liverpool, then a steamer across the Atlantic.','A new life in the New World. Nobody knows me there.','My passage to Ellis Island is paid for.'],obj:['a transatlantic steamship ticket','a letter from a cousin in Chicago']},
     'Paris':{say:['The boat train to Dover, then on to the Gare du Nord.','Montmartre will take me in.','Across the Channel. The Seine, the cafés, freedom.'],obj:['a ticket for the Gare du Nord','a folded map of the boulevards along the Seine']},
-    'Edinburgh':{say:['North, to the castle on the rock.','The Flying Scotsman leaves at dawn.','Home to Princes Street and my sister.'],obj:['a ticket for the Flying Scotsman','a letter postmarked from Leith']},
-    'Bombay':{say:['The P&O steamer through Suez.','Back to Malabar Hill, where I belong.','East, to the Arabian Sea and home.'],obj:['a P&O passage ticket via Suez','a letter postmarked from the Bombay Presidency']}},
+    'Venice':{say:['The night train to Italy, and then a gondola.','The Grand Canal. Nobody looks twice at a stranger there.','My sister keeps rooms by the lagoon.'],obj:['a railway ticket to Venezia Santa Lucia','a string of Murano glass beads']},
+    'Mumbai':{say:['The P&O steamer through Suez.','Back to Malabar Hill, where I belong.','East, to the Arabian Sea and home.'],obj:['a P&O passage ticket via Suez','a letter postmarked from Mumbai']}},
   liner:{
-    'New York':{say:['Keep rowing. The rescue ship is bound for Manhattan.','Lady Liberty’s waiting for us, you’ll see.','Ellis Island. My brother is waiting there.'],obj:['a landing card for a Manhattan pier','a telegram form addressed to Ellis Island']},
-    'Halifax':{say:['The cable ship will take us to Nova Scotia.','The Canadian port is closest. Row north-west.','The Canadians will pick us up.'],obj:['a Nova Scotia customs card','a blanket stamped with a maple leaf']},
-    'Southampton':{say:['Back where we sailed from. I’m going home to the docks.','The Solent. I never should have left it.','Take me back to England, to the port we left from.'],obj:['a return ticket to the Ocean Dock','a letter from Hampshire']},
-    'Queenstown':{say:['Cork harbour. I swear I’ll kiss the ground in Cobh.','Back to Ireland, to the harbour we stopped at.','The tender from the Irish port can take us home.'],obj:['a shamrock pin and a tender ticket from Cork harbour','a letter from County Cork']},
+    'Ireland':{say:['Cork harbour. I swear I’ll kiss the ground in Cobh.','Back to Ireland, to the harbour we stopped at.','The tender from the Irish port can take us home.'],obj:['a shamrock pin and a tender ticket from Cork harbour','a letter from County Cork']},
+    'Nova Scotia':{say:['The cable ship will take us to Nova Scotia.','The Canadian port is closest. Row north-west.','The Canadians will pick us up.'],obj:['a Nova Scotia customs card','a blanket stamped with a maple leaf']},
+    'Long Island':{say:['Keep rowing. The rescue ship puts in at Montauk.','My family’s summer house on the Sound. Nobody will look there.','The beaches past Montauk Point. That’s where I’m going.'],obj:['a ferry ticket across Long Island Sound','a telegram addressed to a house in the Hamptons']},
+    'London':{say:['The boat train to Waterloo, and I’m home.','Back to the Thames. I never should have left it.','A room in Bloomsbury, and nobody will know I came back.'],obj:['a boat-train ticket to Waterloo','a letter postmarked from Piccadilly']},
     'Boston':{say:['Beacon Hill. My aunt will hide me.','The rescue ship makes for Massachusetts.','Into the harbour where they dumped the tea, and then I vanish.'],obj:['a card for a boarding house on Beacon Hill','a Massachusetts railroad timetable']}},
   villa:{
     'Rome':{say:['Up the Appian Way to the city of seven hills.','The Emperor must hear of this.','To the Forum, to my patron.'],obj:['a letter sealed for a senator on the Palatine','a milestone map of the Via Appia']},
