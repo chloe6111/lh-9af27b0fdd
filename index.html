@@ -9,7 +9,7 @@
 /* Live site: the page itself can be cached for a while after a publish, while maps.js etc. come fresh, so an old page
    could show new data. version.txt holds the build stamp; if it differs, load the page again under a new URL.
    BUILD stays 'dev' in the project; stamp_build.py writes the stamp into dist/index.html and dist/version.txt. */
-(function(){var BUILD='20260927234725';if(BUILD==='dev'||window!==window.top||!window.fetch||location.protocol==='file:') return;
+(function(){var BUILD='20260927235146';if(BUILD==='dev'||window!==window.top||!window.fetch||location.protocol==='file:') return;
   fetch('version.txt?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.ok?r.text():''}).then(function(v){
     v=(v||'').trim();if(!v||v===BUILD) return;
     try{var k='lh-build-'+v;if(sessionStorage.getItem(k)) return;sessionStorage.setItem(k,'1')}catch(e){return}
@@ -1496,13 +1496,13 @@ REWARDS.length=0;Object.keys(REW).forEach(k=>delete REW[k]);
   {id:'customs',name:'Customs Seal',rar:'c',kind:'charge',uses:1,tags:['x1','Homeland'],desc:'Restore one torn or smudged homeland on the manifest.'},
   // rare
   {id:'steady',name:'Steady Hand',rar:'r',kind:'charge',uses:1,expires:'era',tags:['x1','This era','Safety'],desc:'Your next failed consultation this era costs no heart. Lost when the era ends.'},
-  {id:'wax',name:'Wax Seal',rar:'r',kind:'relic',tags:['Permanent','Role'],desc:'The quarters register, starting now and in every era after: where everyone slept. Staff slept by their work, so a key hints at a job.'},
+  {id:'wax',name:'Wax Seal',rar:'r',kind:'relic',expires:'era',tags:['This era','Role'],desc:'This era, the quarters register: where everyone slept. Staff slept by their work, so a key hints at a job. Keys turn up in the memories.'},
   {id:'primer',name:'Interpreter’s Ear',rar:'r',kind:'relic',perEra:1,tags:['Permanent','1 per era','Homeland'],desc:'Once per era, place a chosen person’s accent: learn their homeland.'},
   {id:'satchel',name:'Physician’s Satchel',rar:'r',kind:'charge',uses:2,tags:['x2','Death'],desc:'Twice, learn the broad cause of a chosen person’s death: a blade, something heavy, a fall, water or cold…'},
   {id:'lens',name:'Magnifying Lens',rar:'r',kind:'charge',uses:2,tags:['x2','Clue'],desc:'Twice, choose someone’s memory and uncover one extra hidden detail in it.'},
   {id:'tattoo',name:'Tattooist’s Eye',rar:'r',kind:'relic',perEra:2,tags:['Permanent','2 per era','Relationship'],desc:'Twice per era, learn whether a chosen person has family among the dead.'},
-  {id:'nav',name:'Navigator',rar:'r',kind:'relic',tags:['Permanent','Death'],desc:'Unlocks the traveller’s map for the rest of the run: tap a place a survivor mentions to see where they were headed.'},
-  {id:'trans',name:'Translator',rar:'r',kind:'relic',tags:['Permanent','Homeland'],desc:'Every language spoken in the memories is named, starting now and in every era after. Without it, some voices speak a language you don’t recognise.'},
+  {id:'nav',name:'Navigator',rar:'r',kind:'relic',expires:'era',tags:['This era','Death'],desc:'This era, the traveller’s map: tap a place a survivor mentions to see where they were headed.'},
+  {id:'trans',name:'Translator',rar:'r',kind:'relic',expires:'era',tags:['This era','Homeland'],desc:'This era, every language spoken in the memories is named. Without it, some voices speak a language you don’t recognise.'},
   {id:'herald',name:'Seal of the House',rar:'r',kind:'relic',perEra:1,tags:['Permanent','1 per era','Name'],desc:'Once per era, choose a person and learn their surname.'},
   {id:'interro',name:'Interrogator',rar:'r',kind:'relic',perEra:1,tags:['Permanent','1 per era','Name'],desc:'Once per era, ask whether a person bears the name you gave them.'},
   {id:'paste',name:'Archivist’s Paste',rar:'r',kind:'charge',uses:1,tags:['x1','Name'],desc:'Paste a torn page back together: restore one damaged surname in full.'},
@@ -3772,8 +3772,8 @@ function genEra(key,idx,run){
   const rec={role:chars.map((c,i)=>hideR?!hideR.has(i):(c.fam==='head'||!R.chance(pR))),origin:chars.map(()=>!R.chance(pO))};
   // where the register and the traveller's map came from, for the era intro: relics first, then one lucky find (35%)
   // that gives whichever of the two isn't already guaranteed
-  let quartersSrc=has('wax')?'wax':has('carto')?'carto':wax?'wax':null,mapSrc=has('nav')?'nav':null,transSrc=has('trans')?'trans':null;
-  if(R.chance(.35)){const opts=[!quartersSrc&&'q',!mapSrc&&'m',!transSrc&&'t'].filter(Boolean);if(opts.length){const o=R.pick(opts);if(o==='q') quartersSrc='luck';else if(o==='m') mapSrc='luck';else transSrc='luck'}}
+  let quartersSrc=null,mapSrc=null,transSrc=null;
+  if(R.chance(LUCK_FIND)){const o=R.pick(['q','m','t']);if(o==='q') quartersSrc='luck';else if(o==='m') mapSrc='luck';else transSrc='luck'}
   const quartersDoc=!!quartersSrc;
   const f2c=R.shuffle([...Array(n).keys()]);
   const era={id:Math.random().toString(36).slice(2,9),key,idx,n,chars,f2c,rec,quartersDoc,quartersSrc,mapSrc,transSrc,kin,gambler,gOrder:R.shuffle([...Array(n).keys()])};
@@ -3983,7 +3983,7 @@ function consult(){
     if(earn) S.boon={left:((S.boon&&S.boon.left)||0)+1,offer:null};
     let body=`${right.length} fate${right.length>1?'s':''} sealed: ${right.map(f=>charOfFace(f).name).join(', ')}.${cleared?'':earn?' You earn a relic pick.':' One more successful consultation earns a relic.'} The Ledger seals two fates at a time and does not say which of your other answers are right or wrong.`;
     run.consults=(run.consults||0)+1;if(run.relics.includes('fate')&&run.consults%3===0){run.charges.glimpse=(run.charges.glimpse||0)+1;body+=' Fateweaver grants you a Glimpse.'}
-    if(cleared){Object.keys(run.charges).forEach(k=>{if(REW[k]&&REW[k].expires==='era') delete run.charges[k]});S.screen='cleared';ui.sheet=null;ui.mem=null;ui.modal={kind:'msg',title:'The Ledger accepts',body};save();render();window.scrollTo(0,0);return}
+    if(cleared){Object.keys(run.charges).forEach(k=>{if(REW[k]&&REW[k].expires==='era') delete run.charges[k]});run.relics=run.relics.filter(k=>!(REW[k]&&REW[k].expires==='era'));S.screen='cleared';ui.sheet=null;ui.mem=null;ui.modal={kind:'msg',title:'The Ledger accepts',body};save();render();window.scrollTo(0,0);return}
     ui.modal={kind:'msg',title:'The Ledger accepts',body};
   } else if(run.charges.steady){run.charges.steady--;ui.modal={kind:'msg',title:'The Ledger is silent',body:`Fewer than ${need} of your open answers are fully right. Steady Hand spares your heart.`}}
   else{
@@ -4011,7 +4011,7 @@ function makeOffer(opt={}){
   const run=S.run,cnt=S.era&&S.era.gambler?4:3;   // Gambler's Coin: four choices for every offer in that era
   const legOdds=run.relics.includes('blind')?.10:.05;
   const usable=r=>(r.kind==='charge'&&!['steady','slate'].includes(r.id))||!!r.perEra;   // relics with a Use button
-  const avail=REWARDS.filter(r=>!(run.tutorial&&r.id==='blind')&&!(run.tutorial&&opt.start&&!usable(r))&&!(r.kind==='relic'&&run.relics.includes(r.id))&&!(opt.noInstant&&r.kind==='instant')),out=[];let g=0;
+  const avail=REWARDS.filter(r=>!(run.tutorial&&r.id==='blind')&&!(run.tutorial&&opt.start&&!usable(r))&&!(r.kind==='relic'&&run.relics.includes(r.id))&&!(opt.noInstant&&(r.kind==='instant'||r.expires==='era'))&&!(S.era&&((r.id==='wax'&&S.era.quartersDoc)||(r.id==='nav'&&mapOn(S.era))||(r.id==='trans'&&langOn(S.era))))),out=[];let g=0;
   while(out.length<cnt&&g++<400){const roll=Math.random(),rar=roll<legOdds?'l':roll<legOdds+.25?'r':'c';const pool=avail.filter(r=>r.rar===rar&&!out.includes(r.id));if(pool.length) out.push(R.pick(pool).id)}
   const lasting=id=>['relic','next','geneal'].includes(REW[id].kind);
   if(!out.some(lasting)&&!(run.tutorial&&opt.start)){const pool=avail.filter(r=>lasting(r.id)&&r.rar!=='l'&&!out.includes(r.id));if(pool.length) out[R.int(0,out.length-1)]=R.pick(pool).id}
@@ -4262,7 +4262,7 @@ const app=document.getElementById('app');
 const PIN='<svg class="dpin" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22s7-7.1 7-12.2A7 7 0 0 0 5 9.8C5 14.9 12 22 12 22z" fill="currentColor"/><circle cx="12" cy="9.6" r="2.6" fill="#1b1812"/></svg>';
 const mapOn=era=>!!era&&(!('mapSrc' in era)||!!era.mapSrc);
 const destLinks=h=>!mapOn(S.era)?noLinks(h):unL(h).replace(/\[\[D(\d+)\]\]([\s\S]*?)\[\[\/D\]\]/g,(x,i,t)=>`<span class="dlink" role="button" tabindex="0" data-act="map" data-d="${i}" title="Show on a map">${t}${PIN}</span>`);
-const MUTE_RATE=.5,MUTE_TXT='a language you don’t recognise';
+const LUCK_FIND=.5,MUTE_RATE=.5,MUTE_TXT='a language you don’t recognise';
 const langTag=(era,f,L)=>era.muted&&era.muted[f]?`[[L]]${L}[[/L]]`:L;
 const langOn=era=>!era||!era.muted||!!era.transSrc;
 const unL=t=>t.replace(/\[\[L\]\]([\s\S]*?)\[\[\/L\]\]/g,(x,l)=>langOn(S.era)?l:MUTE_TXT);
