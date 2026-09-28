@@ -9,7 +9,7 @@
 /* Live site: the page itself can be cached for a while after a publish, while maps.js etc. come fresh, so an old page
    could show new data. version.txt holds the build stamp; if it differs, load the page again under a new URL.
    BUILD stays 'dev' in the project; stamp_build.py writes the stamp into dist/index.html and dist/version.txt. */
-(function(){var BUILD='20260928095244';if(BUILD==='dev'||window!==window.top||!window.fetch||location.protocol==='file:') return;
+(function(){var BUILD='20260928124142';if(BUILD==='dev'||window!==window.top||!window.fetch||location.protocol==='file:') return;
   fetch('version.txt?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.ok?r.text():''}).then(function(v){
     v=(v||'').trim();if(!v||v===BUILD) return;
     try{var k='lh-build-'+v;if(sessionStorage.getItem(k)) return;sessionStorage.setItem(k,'1')}catch(e){return}
@@ -1122,7 +1122,7 @@ html.nomotion .cports .cport,html.nomotion .cports .cfull img,html.nomotion .cin
 <script src="pieces.js?v=4c6edf9d"></script>
 <script src="stacker.js?v=4c6edf9d"></script>
 <script src="maps.js?v=50a871d3"></script>
-<script src="relic_icons.js?v=d869ef75"></script>
+<script src="relic_icons.js?v=10290547"></script>
 <script>
 
 /* ---------- utilities ---------- */
@@ -1521,6 +1521,7 @@ REWARDS.length=0;Object.keys(REW).forEach(k=>delete REW[k]);
   {id:'tattoo',name:'Tattooist’s Eye',rar:'r',kind:'relic',perEra:2,tags:['Permanent','2 per era','Relationship'],desc:'Twice per era, learn whether a chosen person has family among the dead.'},
   {id:'nav',name:'Navigator',rar:'r',kind:'relic',tags:['Permanent','Death'],desc:'The traveller’s map, starting now and in every era after: tap a place a survivor mentions to see where they were headed.'},
   {id:'trans',name:'Translator',rar:'r',kind:'relic',tags:['Permanent','Homeland'],desc:'Every language spoken in the memories is named, starting now and in every era after. Without it, some voices speak a language you don’t recognise.'},
+  {id:'witness',name:'Eye Witness',rar:'r',kind:'relic',perEra:1,tags:['Permanent','1 per era','Name'],desc:'Once per era, an eyewitness names someone you haven’t identified yet and describes what they were wearing.'},
   {id:'herald',name:'Seal of the House',rar:'r',kind:'relic',perEra:1,tags:['Permanent','1 per era','Name'],desc:'Once per era, choose a person and learn their surname.'},
   {id:'interro',name:'Interrogator',rar:'r',kind:'relic',perEra:1,tags:['Permanent','1 per era','Name'],desc:'Once per era, ask whether a person bears the name you gave them.'},
   {id:'paste',name:'Archivist’s Paste',rar:'r',kind:'charge',uses:1,tags:['x1','Name'],desc:'Paste a torn page back together: restore one damaged surname in full.'},
@@ -1837,6 +1838,7 @@ function buildStory(s,E,era){
   else if(s.killer!=null){const w=WEAPON[cause.item]||WEAPON.knife;moment.push(fill(R.pick(KILL_T[w.cls])).replace(/\{K\}/g,X(s.killer)).replace('{W}',R.pick(w.d)))}
   if(cause.beast){const b=R.pick(BEAST_D[cause.beast]),had=moment.some(t=>t.includes('{B}'));for(let i=0;i<moment.length;i++) moment[i]=moment[i].replace(/\{B\}/g,b);if(!had) moment.push(R.pick([`Afterwards ${b} slinks off into the dark.`,`Something moves away from the body: ${b}.`,`In the shadows stands ${b}, breathing hard.`]))}
   // assemble: before (the threat last), the moment, reactions first, then the aftermath, then a bystander's cry
+  if(typeof chatterLines==='function') chatterLines(s,E,era,X).forEach(t=>before.push(t));   // talk before the moment: extra, true, never needed
   const pre=R.shuffle(before);if(threat) pre.push(threat);
   if(pre.length) groups.push(pre);
   s.impact=groups.flat().length;   // beat index of the death sound (memory playback's impact effect)
@@ -1851,6 +1853,138 @@ function buildStory(s,E,era){
   s.beats=groups.flat().map(cap);
   s.story=groups.map(g=>g.map(cap).join(' '));
 }
+/* ---------- chatter: talk before the moment (eyewitness descriptions, rumours, names, posts) ----------
+   Everything said is true, read from the person's actual portrait layers and the era's truth. It is EXTRA
+   information: the generator never counts on it, so every era stays solvable by the clues alone. */
+const CH_HSL=hex=>{const n=parseInt(hex.slice(1),16),r=(n>>16&255)/255,g=(n>>8&255)/255,b=(n&255)/255,mx=Math.max(r,g,b),mn=Math.min(r,g,b),l=(mx+mn)/2,d=mx-mn;
+  let h=0,s=0;if(d){s=d/(1-Math.abs(2*l-1));h=mx===r?((g-b)/d)%6:mx===g?(b-r)/d+2:(r-g)/d+4;h=(h*60+360)%360}return [h,s,l]};
+function colourName(hex){
+  if(!/^#[0-9a-f]{6}$/i.test(hex||'')) return null;
+  const [h,s,l]=CH_HSL(hex);
+  if(l<.13) return 'black';
+  if(s<.13) return l>.84?'white':l>.62?'pale grey':l<.3?'charcoal':'grey';
+  if(l>.86) return 'cream';
+  if(h<12||h>=345) return l<.3?'maroon':l>.68?'pink':'red';
+  if(h<40) return l<.42?(l<.24?'dark brown':'brown'):s<.45&&l>.55?'tan':'rust orange';
+  if(h<68) return l<.34?'olive':s<.45?'mustard':'gold';
+  if(h<165) return l<.26?'dark green':l>.62?'pale green':'green';
+  if(h<195) return l<.3?'dark teal':'teal';
+  if(h<250) return l<.3?'navy':l>.62?'pale blue':'blue';
+  if(h<290) return l<.3?'deep purple':l>.62?'lilac':'purple';
+  return l<.32?'plum':l>.66?'pink':'magenta';
+}
+function hairColourName(hex){
+  const [h,s,l]=CH_HSL(hex);
+  if(l<.16) return 'black';
+  if(s<.16) return l>.72?'white':'grey';
+  if(l>.58&&h>=28&&h<70) return 'blond';
+  if(h<26&&s>.35) return l<.36?'auburn':'red';
+  return l<.3?'dark brown':'brown';
+}
+const CH_AN=t=>t.replace(/^a ([aeiou])/,'an $1');
+const CH_OUTFIT={suit:'suit',work:'set of work clothes',doublet:'doublet',mail:'mail shirt',cassock:'cassock',robe:'robe',uniform:'uniform',tunic_short:'tunic',toga:'toga',
+  gown_medieval:'gown',dress_victorian:'dress',dress_1920s:'dress',stola:'stola'};
+const CH_LEGS={doublet:'hose',suit:'trousers',work:'trousers',uniform:'trousers',bare:'trousers',tunic_short:'breeches'};
+const CH_HAT={bowler:'a bowler hat',cap:'a cap',captain:'a captain’s cap',circlet:'a gold circlet',cloche:'a cloche hat',coif:'a leather coif',cookcap:'a cook’s cap',
+  flatcap:'a flat cap',galea:'a crested helmet',helm:'a great helm',hood:'a hood',kerchief:'a kerchief',kettle:'a wide iron helmet',laurel:'a laurel wreath',
+  maidcap:'a little white cap',nursecap:'a nurse’s cap',officercap:'an officer’s cap',palla:'a shawl over the head',tiara:'a tiara',tophat:'a top hat',veil:'a veil'};
+const CH_HAIR={short:'short',curly:'curly',long:'long',wavy:'wavy',balding:'thinning',bun:'pinned up',braid:'braided',ponytail:'tied back'};
+const CH_BEARD={full:'a full beard',moustache:'a moustache',goatee:'a goatee',mutton:'mutton-chop whiskers',stubble:'a scratchy stubble'};
+const CH_BADGE={apron:'an apron',strap:'a leather strap across the chest',collar:'a white collar',cross:'a cross on a cord',keys:'a ring of keys at the belt',
+  medals:'medals on the chest',chain:'a gold chain',pearls:'a string of pearls',bag:'a leather bag',book:'a book',case:'a leather case',fur:'a fur collar',
+  purse:'a fat coin purse',samplecase:'a battered case',instrbox:'a small wooden box'};
+const CH_CARRY=['bag','book','case','purse','samplecase','instrbox'];
+/* what someone looks like in their portrait: phrases that are 'wear' (wearing X), 'have' (with X) or 'carry' */
+function lookOf(era,E,c){
+  if(typeof stkLayers!=='function'||!window.PIECES) return [];
+  let L;try{L=stkLayers(era,E,c)}catch(e){return []}
+  const out=[],names=L.map(x=>x[0]);
+  const o=names.find(n=>n.startsWith('outfit_')),T=(L.find(x=>x[0]===o)||[])[1]||{};
+  if(o){const k=o.slice(7).split('__')[0];
+    if(k==='bare') out.push({k:'outfit',v:'have',t:'bare arms and no shirt'});
+    else if(CH_OUTFIT[k]){const col=k==='mail'?null:colourName(T.main);out.push({k:'outfit',v:'wear',t:CH_AN(col?`a ${col} ${CH_OUTFIT[k]}`:`a ${CH_OUTFIT[k]}`)})}
+    if(c.sex==='m'&&CH_LEGS[k]&&PIECES.p[o]&&PIECES.p[o].second){const col=colourName(T.second);if(col) out.push({k:'legs',v:'wear',t:`${col} ${CH_LEGS[k]}`})}}
+  const hat=names.find(n=>n.startsWith('hat_'));
+  if(hat){const k=hat.slice(4).replace(/_f$/,'');
+    if(k==='ribbon'){const col=colourName(c.trim);if(col) out.push({k:'hat',v:'wear',t:`a ${col} ribbon in the hair`})}
+    else if(CH_HAT[k]) out.push({k:'hat',v:'wear',t:CH_HAT[k]})}
+  const hair=names.find(n=>n.startsWith('hair_'));
+  if(hair){const st=hair.split('_')[2],col=hairColourName(T.hair||faceOf(c).hair),w=st==='crop'?(c.sex==='f'?'bobbed':'cropped'):CH_HAIR[st];
+    out.push({k:'hair',v:'have',t:['bun','braid','ponytail'].includes(st)?`${col} hair ${w}`:`${w?w+' ':''}${col} hair`})}
+  else if(!hat&&c.hs==='bald') out.push({k:'hair',v:'have',t:'a bald head'});
+  const fa=names.find(n=>n.startsWith('facial_'));if(fa&&CH_BEARD[fa.slice(7)]) out.push({k:'beard',v:'have',t:CH_BEARD[fa.slice(7)]});
+  names.filter(n=>n.startsWith('acc_')).forEach(n=>{const a=n.slice(4);
+    const t={glasses:'spectacles',eyepatch:'an eyepatch',earring:'gold earrings',necklace:'a gold necklace',bandage:'a bandage round the head',scarf:CH_AN(colourName(c.trim)?`a ${colourName(c.trim)} scarf`:'a scarf')}[a];
+    if(t) out.push({k:'acc',v:'wear',t})});
+  const bd=names.find(n=>n.startsWith('badge_'));
+  if(bd){const k=bd.slice(6).split(/[-_]/)[0];if(CH_BADGE[k]) out.push({k:'badge',v:CH_CARRY.includes(k)?'carry':'wear',t:CH_BADGE[k]})}
+  return out;
+}
+/* one to three features; a carried thing only when there's little else */
+function lookPick(era,E,c,n){const all=lookOf(era,E,c);if(!all.length) return null;
+  const pref=R.shuffle(all.filter(x=>x.k!=='badge')).concat(all.filter(x=>x.k==='badge'));
+  const ORD=['outfit','legs','hat','hair','beard','acc','badge'];
+  return pref.slice(0,Math.min(n||R.pick([1,2,2]),pref.length)).sort((a,b)=>ORD.indexOf(a.k)-ORD.indexOf(b.k))}
+const chAnd=a=>a.length<2?a.join(''):a.slice(0,-1).join(', ')+' and '+a[a.length-1];
+const chGroups=fs=>['wear','have','carry'].map(v=>[v,fs.filter(x=>x.v===v).map(x=>x.t)]).filter(g=>g[1].length);
+/* "wearing a blue doublet and a cap, with a full beard" */
+const chClause=fs=>chGroups(fs).map(([v,ts])=>({wear:'wearing ',have:'with ',carry:'carrying '})[v]+chAnd(ts)).join(', ');
+/* "He was wearing a blue doublet and a cap. He had a full beard." */
+const chSent=(fs,c)=>{const P=c.sex==='m'?'He':'She';return chGroups(fs).map(([v,ts])=>`${P} ${({wear:'was wearing',have:'had',carry:'was carrying'})[v]} ${chAnd(ts)}.`).join(' ')};
+const CH_TALK=['{A} leans over to {B}:','{A} whispers to {B}:','{A} murmurs to {B}:','{A} says to {B}, low:','{A} nudges {B}:','{A} tells {B}:'];
+const CH_MOCK=['{A} snorts to {B}:','{A} rolls their eyes at {B}:','{A} says to {B}, with a sneer:','{A} laughs under their breath to {B}:'];
+const CH_ALONE=['{A} mutters to nobody in particular:','{A} says, half to themself:'];
+const CH_SEEN=['“I saw {N} earlier, {C}.”','“{N} went by a moment ago, {C}.”','“If you’re looking for {N}: {S}”','“You can’t miss {N}. {S}”','“{N}? The one {C}.”','“I’d know {N} anywhere. {S}”'];
+const CH_NICE=['“Did you see {N} tonight? {S} Very fine.”','“{N} looked a picture, {C}.”','“Say what you like about {N}, {P} knows how to dress. {S}”','“I’ll admit it: {N} looked well tonight, {C}.”'];
+const CH_RUDE=['“Did you see {N}? {S} On a night like this.”','“{N}, {C}. Who told {O} that suited {O}?”','“There goes {N} again, {C}. Honestly.”','“{N} thinks {P} cuts a fine figure, {C}.”'];
+const CH_KILLER=['“I saw who went after {N}. Someone {C}.”','“Whoever did for {N}, I saw them: someone {C}. I’d swear to it.”','“I saw the one who killed {N}: someone {C}.”','“It was someone {C} who went for {N}. I saw it.”'];
+const CH_RUMOUR=['“Have you heard about {N}? They say it was {W}.”','“Poor {N}. {W}, they’re saying.”','“They found {N}. It was {W}, I heard.”'];
+const CH_ANGRY=['“Don’t you turn your back on me, {N}!”','“You’ve done nothing but get in the way all night, {N}.”','“I’ll not take orders from you, {N}.”','“Keep your hands to yourself, {N}.”','“You always were a coward, {N}.”','“Don’t you dare, {N}. Not tonight.”'];
+const CH_CASUAL=['“Stay close to me, {N}.”','“Have you eaten anything tonight, {N}?”','“{N}, have you seen my gloves anywhere?”','“Sit down a moment, {N}. You look done in.”','“Mind your step, {N}.”','“We’ll be all right, {N}. You’ll see.”'];
+const CH_POST=['“Shouldn’t you be in {W}, {N}?”','“Who’s minding {W} while you’re up here, {N}?”','“Back to {W} with you, {N}, before you’re missed.”'];
+const chName=c=>R.chance(.5)?c.name:c.first;
+const chCap=t=>t.replace(/^([a-z])/,x=>x.toUpperCase());
+function chatterLines(s,E,era,X){
+  const lines=[],present=s.present,n=R.pick([0,1,1,1,2,2,2,3]);if(!n) return lines;
+  const order=era.order||[],here=order.indexOf(s.victim);   // this memory's place in the night
+  const charOf=f=>era.chars[era.f2c[f]];
+  const earlier=here>0?order.slice(0,here).filter(f=>!(era.survivors||[]).includes(f)):[];
+  const absent=[...Array(era.n).keys()].filter(f=>!present.includes(f));
+  const used=new Set();
+  const frame=(pool,a,b)=>R.pick(b!=null?pool:CH_ALONE).replace('{A}',X(a)).replace('{B}',b!=null?X(b):'');
+  for(let i=0;i<n;i++){
+    const a=R.pick(present),others=present.filter(f=>f!==a),b=others.length?R.pick(others):null;
+    const kinds=['seen','seen','nice','rude'];
+    if(earlier.length) kinds.push('rumour');
+    if(earlier.some(f=>era.killerOf[f]!=null)) kinds.push('killer');
+    if(b!=null) kinds.push('angry','casual','post');
+    const avail=kinds.filter(x=>!used.has(x));if(!avail.length) break;
+    const k=R.pick(avail);used.add(k);
+    if(k==='seen'||k==='nice'||k==='rude'){
+      const pool=absent.length?absent:present.filter(x=>x!==a);if(!pool.length) continue;
+      const c=charOf(R.pick(pool)),fs=lookPick(era,E,c);if(!fs) continue;
+      const P=c.sex==='m'?'he':'she',O=c.sex==='m'?'him':'her';
+      const t=R.pick(k==='seen'?CH_SEEN:k==='nice'?CH_NICE:CH_RUDE).replace('{N}',chName(c)).replace('{C}',chClause(fs)).replace('{S}',chSent(fs,c)).replace(/\{O\}/g,O).replace('{P}',P);
+      lines.push(`${frame(k==='rude'?CH_MOCK:CH_TALK,a,b)} ${t}`);
+    } else if(k==='killer'){
+      const vf=R.pick(earlier.filter(f=>era.killerOf[f]!=null)),fs=lookPick(era,E,charOf(era.killerOf[vf]),2);if(!fs) continue;
+      lines.push(`${frame(CH_TALK,a,b)} ${R.pick(CH_KILLER).replace('{N}',chName(charOf(vf))).replace('{C}',chClause(fs))}`);
+    } else if(k==='rumour'){
+      const vf=R.pick(earlier),g=causeOf(E,era.deathCause[vf]).g,w=SATCHEL_CAT[g];if(!w||g==='Alive') continue;
+      lines.push(`${frame(CH_TALK,a,b)} ${R.pick(CH_RUMOUR).replace('{N}',chName(charOf(vf))).replace('{W}',{'the throat':'something at the throat','their own hand':'by their own hand','heat or force':'fire or a blast','something from within':'nothing you could see from outside'}[w]||w).replace(/“([a-z])/,(x,y)=>'“'+y.toUpperCase())}`);
+    } else if(k==='post'){
+      const c=charOf(b),P=(typeof STK_PLACES!=='undefined'&&STK_PLACES[era.key])||{},N=(typeof POST_NAMES!=='undefined'&&POST_NAMES[era.key])||{};
+      const posts=Object.keys(P).filter(p=>P[p].includes(c.role)&&N[p]);if(!posts.length) continue;
+      lines.push(`${X(a)} turns to ${X(b)}: ${R.pick(CH_POST).replace('{W}',N[R.pick(posts)].replace(/^The /,'the ')).replace('{N}',c.first)}`);
+    } else {
+      const c=charOf(b);
+      lines.push(`${R.pick(k==='angry'?['{A} rounds on {B}:','{A} snaps at {B}:','{A} jabs a finger at {B}:']:['{A} says to {B}:','{A} touches {B}’s arm:','{A} calls to {B}:']).replace('{A}',X(a)).replace('{B}',X(b))} ${R.pick(k==='angry'?CH_ANGRY:CH_CASUAL).replace('{N}',c.first)}`);
+    }
+  }
+  return lines;
+}
+/* Eye Witness relic: what a named person was wearing */
+function witnessLine(era,E,f){const c=era.chars[era.f2c[f]],fs=lookPick(era,E,c,3);return fs?chSent(fs,c):null}
 /* ---------- escape memories: survivors' destinations are only ever hinted ---------- */
 const DEST_HINTS={
   medieval:{
@@ -4167,6 +4301,14 @@ function useTool(id){
     era.assign.forEach(a=>{if(a.c===era.f2c[f]) a.c=null});era.assign[f].c=era.f2c[f];
     run.charges.glimpse--;ui.sheet={f,t:'notes'};
     revealPop('glimpse',`Who <span class="fno">#${f+1}</span> was`,[{label:'Name',after:esc(c.name)},{label:'Homeland',after:esc(E.origins[c.origin].name)}],'Their answer has been filled in with this name, and their manifest entry is mended.');
+  } else if(id==='witness'){
+    // someone you don't know yet, by name, and what they looked like: you still have to find the portrait
+    const unknown=open.filter(g=>era.assign[g].c!==era.f2c[g]);
+    const f=R.pick(unknown.length?unknown:open),c=charOfFace(f),line=witnessLine(era,E,f);
+    if(!line){toast('No one saw anything useful.');return}
+    era.used.witness=usedThisEra('witness')+1;
+    era.findings.push(`Eye Witness: “${c.name}? ${line}”`);
+    revealPop('witness','An eyewitness speaks',[{label:'Name',after:esc(c.name)},{label:'Seen',after:esc(line)}],'Find the portrait that matches. This is kept in Records, under Findings.');
   } else if(id==='kinship'){
     const c2f=[];era.f2c.forEach((c,f)=>c2f[c]=f);
     const cands=era.kin.map((k,i)=>i).filter(i=>!era.shownKin.includes(i));
