@@ -9,7 +9,7 @@
 /* Live site: the page itself can be cached for a while after a publish, while maps.js etc. come fresh, so an old page
    could show new data. version.txt holds the build stamp; if it differs, load the page again under a new URL.
    BUILD stays 'dev' in the project; stamp_build.py writes the stamp into dist/index.html and dist/version.txt. */
-(function(){var BUILD='20260928232214';if(BUILD==='dev'||window!==window.top||!window.fetch||location.protocol==='file:') return;
+(function(){var BUILD='20260928232842';if(BUILD==='dev'||window!==window.top||!window.fetch||location.protocol==='file:') return;
   fetch('version.txt?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.ok?r.text():''}).then(function(v){
     v=(v||'').trim();if(!v||v===BUILD) return;
     try{var k='lh-build-'+v;if(sessionStorage.getItem(k)) return;sessionStorage.setItem(k,'1')}catch(e){return}
@@ -4905,7 +4905,7 @@ function memoryView(){
     ?`<div class="present seenchips">${also.map(i=>memChip(i)).join('')}</div>`
     :`<p class="small light-muted">No other memory.</p>`));
   const mb=(id,l)=>`<button class="btn ghost light markbtn mb-${id}${ui.markMode===id?' on':''}" data-act="markmode" data-m="${id}" aria-pressed="${ui.markMode===id}">${l}</button>`;
-  h+=sec('notes',`<h3 class="memh">Mark the memory</h3><div class="markbtns">${mb('h','Highlight')}${mb('x','Cross out')}</div><p class="small light-muted markhint">Turn one on, then tap sentences in the memory. Tap a marked sentence again to clear it.</p>`+notesBody(s.victim,' light')).replace('<section class="mtab','<section data-page="blocks" class="mtab');
+  h+=sec('notes',`<div class="markbtns" title="Turn one on, then tap sentences in the memory. Tap a marked sentence again to clear it.">${mb('h','Highlight')}${mb('x','Cross out')}</div>`+notesBody(s.victim,' light')).replace('<section class="mtab','<section data-page="blocks" class="mtab');
   // phones: the memory and its notes are separate tabs, so marking happens on the Memory tab under a small bar
   if(ui.markMode&&!DESK) h+=`<div class="markbar mb-${ui.markMode}"><span>${ui.markMode==='h'?'Highlighting':'Crossing out'}: tap sentences</span><button class="btn primary" data-act="markmode" data-m="off">Done</button></div>`;
   h+=sec('fate',`<h3 class="memh">Your verdict on ${labelShort(s.victim)}</h3><div class="memform">${answerForm(s.victim)}</div>
