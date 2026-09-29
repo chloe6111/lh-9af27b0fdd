@@ -9,7 +9,7 @@
 /* Live site: the page itself can be cached for a while after a publish, while maps.js etc. come fresh, so an old page
    could show new data. version.txt holds the build stamp; if it differs, load the page again under a new URL.
    BUILD stays 'dev' in the project; stamp_build.py writes the stamp into dist/index.html and dist/version.txt. */
-(function(){var BUILD='20260929121225';if(BUILD==='dev'||window!==window.top||!window.fetch||location.protocol==='file:') return;
+(function(){var BUILD='20260929121718';if(BUILD==='dev'||window!==window.top||!window.fetch||location.protocol==='file:') return;
   fetch('version.txt?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.ok?r.text():''}).then(function(v){
     v=(v||'').trim();if(!v||v===BUILD) return;
     try{var k='lh-build-'+v;if(sessionStorage.getItem(k)) return;sessionStorage.setItem(k,'1')}catch(e){return}
@@ -1015,8 +1015,10 @@ html.desk .memnav [data-act="memi"],html.desk .memnav [data-act="closemem"]{widt
 .xsw{font-weight:700;font-size:1.05rem;color:#e07a6a;line-height:1}
 .markbtn.on .xsw{color:#fff}
 @media (orientation:landscape) and (max-height:540px){
-  .memnav:not(.onstory) .markbtns{display:none}
-  .memnav .memtime{flex:1 0 auto!important}.memnav .memtime .btn,.memnav .navbtn{flex:none;width:110px;padding-left:6px;padding-right:6px}
+  .memnav:not(.onstory) .markbtns{visibility:hidden}
+  .memnav{display:grid!important;grid-template-columns:1fr auto 1fr;align-items:center}
+  .memnav .memtime{justify-self:start}.memnav .memright2{justify-self:end}.memnav .markbtns{justify-self:center;flex:none!important}
+  .memnav .memtime .btn,.memnav .navbtn{flex:none;width:104px;padding-left:6px;padding-right:6px}
   .memnav .markbtns{flex:1 0 auto!important;flex-wrap:nowrap!important}
   .memnav .markbtns{gap:6px;align-items:stretch}.memnav .markbtns .markbtn{min-height:34px!important;width:70px;height:auto;min-width:0;padding:0!important;flex:0 0 70px!important}
   .memnav .markbtns .hlsw{width:15px;height:10px}.memnav .markbtns .xsw{font-size:.9rem}
@@ -1045,7 +1047,7 @@ html.kbtyping .cnadd .cnin,html.kbtyping .gnadd .cnin{flex:1;font-size:16px}
 .mapsheet{cursor:pointer}
 /* narrow landscape screens (the unfolded Fold's 700 px frame): shorter top-bar labels so the era title fits */
 @media (orientation:landscape) and (max-height:540px) and (max-width:780px){.topact .tlong{display:none}.memnav .btn{font-size:.74rem;padding-left:4px!important;padding-right:4px!important}.memnav{gap:5px}.memnav .lmid{display:none}.memnav .lxs{display:inline}
-  .memnav .memtime .btn,.memnav .navbtn{width:84px}.memnav [data-act="replay"] .lmid{display:inline}.memnav [data-act="replay"] .lxs{display:none}.memnav .markbtns .markbtn{width:50px;flex:0 0 50px!important}}
+  .memnav .memtime .btn,.memnav .navbtn{width:60px}.memnav .markbtns .markbtn{width:42px;flex:0 0 42px!important}}
 .lxs{display:none}.scrim:has(> .mapsheet){overflow:hidden}
 html.desk .sheet.mapsheet{width:auto;max-width:none}html.desk .mapsheet .dmap{height:min(680px,78vh);width:auto;aspect-ratio:4/3}
 .lshort{display:none}
@@ -4632,7 +4634,7 @@ function chip(f){
   return `<button class="chip${sealed?' sealed':''}" data-act="face" data-f="${f}">${thumb(f,24)}<span>${labelHTML(f)}</span></button>`;
 }
 function render(){
-  setTimeout(()=>{if(typeof kbCheck==='function') kbCheck()},0);
+  setTimeout(()=>{if(typeof kbCheck==='function') kbCheck();alignMarks()},0);
   {const ov=document.getElementById('tipov');if(ov) ov.remove()}
   if(!S){app.innerHTML=titleScreen()+(ui.modal?modalView():'');document.documentElement.classList.add('noscroll');runPaging();return}
   if(S.screen==='play'&&S.boon&&S.boon.left>0&&!ui.modal&&!ui.cine) openBoon();
@@ -4917,7 +4919,6 @@ function memoryView(){
   // highlight / cross out: small icon buttons (desktop: the bottom row; phones: centred under the text, above the page dots)
   const mb=(id,l,ico)=>`<button class="btn ghost light markbtn mb-${id}${ui.markMode===id?' on':''}" data-act="markmode" data-m="${id}" aria-pressed="${ui.markMode===id}" aria-label="${l}" title="${l}: turn on, then tap sentences in the memory. Tap a marked sentence again to clear it.">${ico}</button>`;
   const marks=`<div class="memact markbtns">${mb('h','Highlight','<span class="hlsw" aria-hidden="true"></span>')}${mb('x','Cross out','<span class="xsw" aria-hidden="true">✕</span>')}</div>`;
-  if(!DESK) story+=`<div class="markrow pkeep">${marks.replace('memact markbtns','markbtns')}</div>`;
   h+=sec('story',story).replace('<section class="mtab','<section data-page="text" class="mtab');
   const also=era.scenes.map((x,i)=>i!==m.i&&x.present.includes(s.victim)?i:-1).filter(i=>i>=0);
   h+=sec('people',`<h3 class="memh">Present in this memory</h3><div class="present">${s.present.map(f=>chip(f)).join('')}</div>
@@ -4930,9 +4931,9 @@ function memoryView(){
   h+=sec('fate',`<h3 class="memh">Your verdict on ${labelShort(s.victim)}</h3><div class="memform">${answerForm(s.victim)}</div>
     ${era.sealed[s.victim]?'':`<button class="btn ghost light debug" data-act="debugsolve" data-f="${s.victim}">Debug: fill in answer</button>`}`);
   if(DESK) return deskMemory(h,m,s,era,marks);
-  h+=`<div class="memnav${(ui.memTab||'story')==='story'?' onstory':''}"><div class="memact memtime">${m.i>0?`<button class="btn ghost light" data-act="memi" data-i="${m.i-1}" aria-label="Earlier in time"><span class="lfull">Earlier in time</span><span class="lshort">‹ Earlier</span></button>`:''}${m.i<era.scenes.length-1?`<button class="btn ghost light" data-act="memi" data-i="${m.i+1}" aria-label="Later in time"><span class="lfull">Later in time</span><span class="lshort">Later ›</span></button>`:''}</div>
-    <div class="memact"><button class="btn ghost light" data-act="replay" data-i="${m.i}"><span class="lfull">Watch the scene again</span><span class="lshort"><span class="lmid">Watch again</span><span class="lxs">Replay</span></span></button></div>
-    <div class="memact"><button class="btn primary navbtn" data-act="closemem"><span class="lmid">Back to the dead</span><span class="lxs">Back</span></button></div></div>`;
+  h+=`<div class="memnav${(ui.memTab||'story')==='story'?' onstory':''}"><div class="memact memtime">${m.i>0?`<button class="btn ghost light" data-act="memi" data-i="${m.i-1}" aria-label="Earlier in time"><span class="lfull">Earlier in time</span><span class="lshort">‹ Earlier</span></button>`:''}${m.i<era.scenes.length-1?`<button class="btn ghost light" data-act="memi" data-i="${m.i+1}" aria-label="Later in time"><span class="lfull">Later in time</span><span class="lshort">Later ›</span></button>`:''}</div>${marks}
+    <div class="memact memright2"><button class="btn ghost light" data-act="replay" data-i="${m.i}"><span class="lfull">Watch the scene again</span><span class="lshort"><span class="lmid">Watch again</span><span class="lxs">Replay</span></span></button>
+    <button class="btn primary navbtn" data-act="closemem"><span class="lmid">Back to the dead</span><span class="lxs">Back</span></button></div></div>`;
   return h+`</div></div></div>`;
 }
 /* desktop memory screen, built from the sections memoryView() has made: portrait | story | side column with tabs */
@@ -5360,6 +5361,11 @@ document.addEventListener('change',e=>{
 document.addEventListener('keydown',e=>{if(e.target.matches&&e.target.matches('.cnin')) return;
   if(DESK&&S&&S.screen==='play'&&ui.tab==='gather'&&!ui.mem&&!ui.cine&&!ui.pick&&!ui.modal&&!ui.sheet&&(e.key==='ArrowRight'||e.key==='ArrowLeft')){const n=Math.ceil(S.era.n/12),p=(ui.deadPage||0)+(e.key==='ArrowRight'?1:-1);if(p>=0&&p<n){ui.deadPage=p;render()}return}if(ui.cine&&(e.key===' '||e.key==='Enter'||e.key==='ArrowRight')){e.preventDefault();tickCine();return}if(e.key==='Escape'&&ui.cine){endCine();return}if(e.key==='Escape'){if(ui.pick) ui.pick=null;else if(ui.sheet) ui.sheet=null;else if(ui.modal&&ui.modal.kind!=='msg'&&ui.modal.kind!=='boon') ui.modal=null;else if(ui.mem){clearTimeout(ui.memT);ui.mem=null}render()}});
 /* custom notes: submit from the Add button or the keyboard's Enter/Done key */
+/* phones: the mark buttons in the memory's bottom row line up exactly with the page dots above them */
+function alignMarks(){const g=document.querySelector('.memory .memnav .markbtns');if(!g||DESK) return;g.style.transform='';
+  const d=document.querySelector('.memory .mtab.on .pdots')||document.querySelector('.memory .mtab.on');if(!d) return;
+  const a=d.getBoundingClientRect(),b=g.getBoundingClientRect();if(!a.width||!b.width) return;
+  const dx=Math.round((a.left+a.right)/2-(b.left+b.right)/2);if(dx&&Math.abs(dx)<30) g.style.transform=`translateX(${dx}px)`}
 /* on touch screens, lift the note box above the keyboard while typing in it */
 const KB_TOUCH=matchMedia('(pointer:coarse)').matches||(navigator.maxTouchPoints>0&&!matchMedia('(any-pointer:fine)').matches);
 function kbCheck(){const a=document.activeElement;document.documentElement.classList.toggle('kbtyping',KB_TOUCH&&!!(a&&a.classList&&a.classList.contains('cnin')))}
