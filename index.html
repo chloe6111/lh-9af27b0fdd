@@ -9,7 +9,7 @@
 /* Live site: the page itself can be cached for a while after a publish, while maps.js etc. come fresh, so an old page
    could show new data. version.txt holds the build stamp; if it differs, load the page again under a new URL.
    BUILD stays 'dev' in the project; stamp_build.py writes the stamp into dist/index.html and dist/version.txt. */
-(function(){var BUILD='20260929131043';if(BUILD==='dev'||window!==window.top||!window.fetch||location.protocol==='file:') return;
+(function(){var BUILD='20260929131606';if(BUILD==='dev'||window!==window.top||!window.fetch||location.protocol==='file:') return;
   fetch('version.txt?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.ok?r.text():''}).then(function(v){
     v=(v||'').trim();if(!v||v===BUILD) return;
     try{var k='lh-build-'+v;if(sessionStorage.getItem(k)) return;sessionStorage.setItem(k,'1')}catch(e){return}
@@ -5219,6 +5219,8 @@ const TIPS=[
    text:()=>'Your goal for every person: <b>who they were, how they died, and who killed them</b> if someone did. You can change these answers any time. Nothing is final until you <b>Consult the Ledger</b>.'},
   {id:'people',when:()=>!!ui.mem&&!ui.cine&&!ui.modal&&!ui.pick&&!ui.sheet,at:()=>$vis('.mtab.on[data-t="people"] .present .chip'),
    text:()=>'Everyone present in this memory. <b>Tap any of them</b> to open their card, see where else they appear, and record who you think they are.'},
+  {id:'npulse',when:()=>!!ui.mem&&ui.notesPulse===ui.mem.i&&!ui.cine&&!ui.modal&&!ui.pick&&!ui.sheet,at:()=>$vis('.memory .mt.npulse'),
+   text:()=>{const f=S.era.scenes[ui.mem.i].victim;return `The Notes tab glows when <b>this memory holds a clue about ${labelShort(f)} you haven’t tagged yet</b>: their voice, their job, a family tie or their name. Open Notes to tag it while it’s fresh.`}},
   {id:'notes',when:()=>!!ui.mem&&!ui.cine&&!ui.modal&&!ui.pick&&!ui.sheet,at:()=>$vis('.mtab.on[data-t="notes"] .ntagadd'),   // the memory's Notes tab only
    text:()=>'Tag what you already know about this person (a relative, the kind of death, a role, a homeland) or jot a short note, so you can <b>come back and solve them later</b>.'},
   {id:'pages',when:()=>S.screen==='play'&&!ui.cine&&!ui.modal&&!ui.pick&&(ui.mem||ui.tab==='manifest'||ui.sheet),at:()=>$vis('.pdots'),
@@ -5382,6 +5384,7 @@ function notesPulseCheck(){const key=S&&S.era&&ui.mem&&!ui.cine?ui.mem.i:null;
     spent+=1000;if(spent<NOTE_PULSE_MS) return;
     clearInterval(ui._pT);if(!needsNote(key)) return;
     ui.notesPulse=key;ui.notesPulsed=null;document.querySelectorAll('.memory .mt[data-t="notes"]').forEach(b=>b.classList.add('npulse'));
+    setTimeout(()=>{if(typeof tutorialCheck==='function') tutorialCheck()},600);   // the first time: a tutorial tip says why
     setTimeout(()=>{if(ui.notesPulse===key) ui.notesPulsed=key},3700)},1000)}   // after the two pulses, redraws show only the solid border
 /* phones: the mark buttons in the memory's bottom row line up exactly with the page dots above them */
 function alignMarks(){const g=document.querySelector('.memory .memnav .markbtns');if(!g||DESK) return;g.style.transform='';
