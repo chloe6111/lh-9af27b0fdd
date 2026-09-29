@@ -9,7 +9,7 @@
 /* Live site: the page itself can be cached for a while after a publish, while maps.js etc. come fresh, so an old page
    could show new data. version.txt holds the build stamp; if it differs, load the page again under a new URL.
    BUILD stays 'dev' in the project; stamp_build.py writes the stamp into dist/index.html and dist/version.txt. */
-(function(){var BUILD='20260929145244';if(BUILD==='dev'||window!==window.top||!window.fetch||location.protocol==='file:') return;
+(function(){var BUILD='20260929150147';if(BUILD==='dev'||window!==window.top||!window.fetch||location.protocol==='file:') return;
   fetch('version.txt?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.ok?r.text():''}).then(function(v){
     v=(v||'').trim();if(!v||v===BUILD) return;
     try{var k='lh-build-'+v;if(sessionStorage.getItem(k)) return;sessionStorage.setItem(k,'1')}catch(e){return}
@@ -5227,7 +5227,7 @@ const TIPS=[
    text:()=>{const f=S.era.scenes[ui.mem.i].victim;return `<b>This memory holds a clue about ${labelShort(f)} you haven’t tagged yet.</b><br>Open Notes to tag it.`}},
   {id:'notes',wait:3000,when:()=>!!ui.mem&&!ui.cine&&!ui.modal&&!ui.pick&&!ui.sheet,at:()=>$vis('.mtab.on[data-t="notes"] .ntagadd'),   // the memory's Notes tab only
    text:()=>'<b>Tag what you know about this person.</b><br>This is critical for gathering and narrowing down information later.'},
-  {id:'pages',when:()=>S.screen==='play'&&!ui.cine&&!ui.modal&&!ui.pick&&(ui.mem||ui.tab==='manifest'||ui.sheet),at:()=>$vis('.pdots'),
+  {id:'pages',wait:2000,when:()=>S.screen==='play'&&!ui.cine&&!ui.modal&&!ui.pick&&(ui.mem||ui.tab==='manifest'||ui.sheet),at:()=>$vis('.pdots'),
    text:()=>DESK?'<b>Scroll the mouse wheel or click a dot to turn the page.</b>':'<b>Swipe sideways to turn the page.</b>'},
   {id:'marks',when:()=>!!ui.mem&&!ui.cine&&!ui.modal&&!ui.pick&&!ui.sheet&&(DESK||(ui.memTab||'story')==='story')&&(tipsSeen().includes('pages')||!$vis('.memory .pdots')),at:()=>$vis('.memnav .markbtns'),
    text:()=>'Mark up the memory as you work it out.<br><b>Highlight</b> a line that matters.<br><b>Cross out</b> ones you’ve dealt with.'},
