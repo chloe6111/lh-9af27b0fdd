@@ -9,7 +9,7 @@
 /* Live site: the page itself can be cached for a while after a publish, while maps.js etc. come fresh, so an old page
    could show new data. version.txt holds the build stamp; if it differs, load the page again under a new URL.
    BUILD stays 'dev' in the project; stamp_build.py writes the stamp into dist/index.html and dist/version.txt. */
-(function(){var BUILD='20260929121718';if(BUILD==='dev'||window!==window.top||!window.fetch||location.protocol==='file:') return;
+(function(){var BUILD='20260929130241';if(BUILD==='dev'||window!==window.top||!window.fetch||location.protocol==='file:') return;
   fetch('version.txt?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.ok?r.text():''}).then(function(v){
     v=(v||'').trim();if(!v||v===BUILD) return;
     try{var k='lh-build-'+v;if(sessionStorage.getItem(k)) return;sessionStorage.setItem(k,'1')}catch(e){return}
@@ -1025,6 +1025,9 @@ html.desk .memnav [data-act="memi"],html.desk .memnav [data-act="closemem"]{widt
 }
 .markrow{display:flex;justify-content:center;flex:none;margin:6px 0 2px}.markrow .markbtns{display:flex;gap:10px;margin:0}
 .markrow .markbtn{min-height:34px!important;width:70px;flex:0 0 70px!important;padding:0!important}
+.mt.npulse:not(.on){animation:lh-npulse 1.8s ease-in-out infinite;border-color:#e8c870;color:#f3ecd8}
+@keyframes lh-npulse{0%,100%{box-shadow:0 0 0 0 rgba(232,200,112,0)}50%{box-shadow:0 0 0 4px rgba(232,200,112,.45),0 0 18px rgba(232,200,112,.35)}}
+html.nomotion .mt.npulse:not(.on){animation:none;box-shadow:0 0 0 2px rgba(232,200,112,.6)}
 /* typing a note on a touch screen: the box sits at the top, above the on-screen keyboard */
 html.kbtyping .cnadd,html.kbtyping .gnadd{position:fixed!important;top:10px;left:12px;right:12px;z-index:400;margin:0!important;padding:10px;border-radius:14px;background:#1b1812;border:1.5px solid #d8b86a;box-shadow:0 10px 40px rgba(0,0,0,.7);display:flex;gap:8px}
 html.kbtyping .cnadd .cnin,html.kbtyping .gnadd .cnin{flex:1;font-size:16px}
@@ -4142,8 +4145,9 @@ function genEra(key,idx,run){
       else if(S===s.victim){text=`${w}…`;react=true}
       else text=`${w}! Stay with me!`;
       s.voices.push({sp:S,to:T,text,react});if(S!==s.victim) s.reach.push(S);
+      (s.hints=s.hints||[]).push({f:cl.f,t:'kin'},{f:cl.g,t:'kin'});
     } else {
-      const s=scenes[R.pick(withF(cl.f))],c=chars[f2c[cl.f]];
+      const s=scenes[R.pick(withF(cl.f))],c=chars[f2c[cl.f]];(s.hints=s.hints||[]).push({f:cl.f,t:cl.type});
       if(cl.type==='origin'){const o=E.origins[cl.v],fresh=E.say.filter(t=>!s.voices.some(v=>v.text===t));s.voices.push({sp:cl.f,lang:o.L?`in ${langTag(era,cl.f,o.L)}`:`with ${o.A}`,text:R.pick(fresh.length?fresh:E.say),react:false})}
       else if(cl.type==='quarters') s.tags.push({f:cl.f,kind:'key',label:`key: ${cl.v}`});
       else if(cl.type==='house') s.tags.push({f:cl.f,kind:'crest',label:E.crest.replace('{S}',cl.v),sur:cl.v});
@@ -4634,7 +4638,7 @@ function chip(f){
   return `<button class="chip${sealed?' sealed':''}" data-act="face" data-f="${f}">${thumb(f,24)}<span>${labelHTML(f)}</span></button>`;
 }
 function render(){
-  setTimeout(()=>{if(typeof kbCheck==='function') kbCheck();alignMarks()},0);
+  setTimeout(()=>{if(typeof kbCheck==='function') kbCheck();alignMarks();notesPulseCheck()},0);
   {const ov=document.getElementById('tipov');if(ov) ov.remove()}
   if(!S){app.innerHTML=titleScreen()+(ui.modal?modalView():'');document.documentElement.classList.add('noscroll');runPaging();return}
   if(S.screen==='play'&&S.boon&&S.boon.left>0&&!ui.modal&&!ui.cine) openBoon();
@@ -4911,7 +4915,7 @@ function memoryView(){
   let h=`<div class="memory" role="dialog" aria-label="Memory of ${esc(labelText(s.victim))}"><div class="memtop"><span>${labelHTML(s.victim)} <small class="memorder">· <b class="mclock">${sceneClock(era,m.i,true)}</b> · ${ordinal(m.i+1)} of ${era.scenes.length} in time</small></span><button class="memx" data-act="closemem" aria-label="Close memory">✕</button></div><div class="memwrap">`;
   // the portrait, shown like a card on the grid in phone landscape
   h+=`<div class="memleft"><div class="membust">${pic(s.victim)}${badges(s.victim)}</div></div><div class="memright">`;
-  h+=`<div class="memtabs" role="tablist">${[['story','Memory'],['people','People'],['notes','Notes'],['fate','Verdict']].map(([id,l])=>`<button role="tab" class="mt${tab===id?' on':''}" aria-selected="${tab===id}" data-act="memtab" data-t="${id}">${l}</button>`).join('')}</div>`;
+  h+=`<div class="memtabs" role="tablist">${[['story','Memory'],['people','People'],['notes','Notes'],['fate','Verdict']].map(([id,l])=>`<button role="tab" class="mt${tab===id?' on':''}${id==='notes'&&ui.notesPulse===m.i?' npulse':''}" aria-selected="${tab===id}" data-act="memtab" data-t="${id}">${l}</button>`).join('')}</div>`;
   const paras=[];if(s.beats){let k=0;s.story.forEach(par=>{const sn=[];let acc='';while(k<s.beats.length&&acc.length<par.length){sn.push(s.beats[k]);acc=(acc?acc+' ':'')+s.beats[k];k++}paras.push(sn)})}
   let bi=0;const mk=b=>{const v=(era.marks||{})[m.i+':'+b];return v?` mk-${v}`:''};
   let story=`<div class="story">${(paras.length?paras:s.story.map(x=>[x])).map((sn,i)=>`<p class="fade" style="animation-delay:${i*.25}s">${sn.map(b=>{const k=bi++;return `<span class="snt${mk(k)}" data-b="${k}">${fillT(b)}</span>`}).join(' ')}</p>`).join('')}</div>`;
@@ -4944,7 +4948,7 @@ function deskMemory(h,m,s,era,marks){
   const story=secs.story.replace(/class="mtab( on)?"/,'class="mtab on dstory"');
   const top=h.slice(0,h.indexOf('<div class="memwrap">'));
   const left=h.slice(h.indexOf('<div class="memleft">'),h.indexOf('<div class="memright">'));
-  return `${top}<div class="dmem">${left}${story}<div class="dside"><div class="memtabs" role="tablist">${[['fate','Verdict'],['people','People'],['notes','Notes']].map(([id,l])=>`<button role="tab" class="mt${side===id?' on':''}" aria-selected="${side===id}" data-act="memtab" data-t="${id}">${l}</button>`).join('')}</div>
+  return `${top}<div class="dmem">${left}${story}<div class="dside"><div class="memtabs" role="tablist">${[['fate','Verdict'],['people','People'],['notes','Notes']].map(([id,l])=>`<button role="tab" class="mt${side===id?' on':''}${id==='notes'&&ui.notesPulse===m.i?' npulse':''}" aria-selected="${side===id}" data-act="memtab" data-t="${id}">${l}</button>`).join('')}</div>
     ${on(secs.fate,'fate')}${on(secs.people,'people')}${on(secs.notes,'notes')}</div></div>
     <div class="memnav"><div class="memact">${m.i>0?`<button class="btn ghost light" data-act="memi" data-i="${m.i-1}">‹ Earlier in time</button>`:''}${m.i<era.scenes.length-1?`<button class="btn ghost light" data-act="memi" data-i="${m.i+1}">Later in time ›</button>`:''}</div>
     ${marks||''}<div class="memact"><button class="btn ghost light" data-act="replay" data-i="${m.i}">Watch the scene again</button><button class="btn primary" data-act="closemem">Back to the dead</button></div></div></div>`;
@@ -5290,7 +5294,7 @@ document.addEventListener('click',e=>{
     case 'untag':{const p=pnote(+b.dataset.f),k=b.dataset.k,v=tagConv(k,b.dataset.v),i=p[k].indexOf(v);if(i>=0) p[k].splice(i,1);save();render();break}
     case 'addnote':addNote(+b.dataset.f);break;
     case 'delnote':pnote(+b.dataset.f).custom.splice(+b.dataset.i,1);save();render();break;
-    case 'memtab':ui.memTab=b.dataset.t;ui.notesNot=false;ui.markMode=null;render();{const el=document.querySelector('.mtab.on');if(el) el.scrollTop=0}break;
+    case 'memtab':ui.memTab=b.dataset.t;ui.notesNot=false;ui.markMode=null;if(b.dataset.t==='notes') ui.notesPulse=null;render();{const el=document.querySelector('.mtab.on');if(el) el.scrollTop=0}break;
     case 'openpick':ui.pick={kind:b.dataset.kind,f:+b.dataset.f};render();{const pb=document.querySelector('.picker .ptile.on');if(pb) pb.scrollIntoView({block:'center'})}break;
     case 'picked':{const {kind,f}=ui.pick;ui.pick=null;setAnswer(f,kind,b.dataset.v===''?null:b.dataset.v);break}
     case 'closepick':ui.pick=null;render();break;
@@ -5319,7 +5323,8 @@ document.addEventListener('click',e=>{
     case 'cineskip':endCine();break;
     case 'replay':openMemory(+b.dataset.i,true);break;
     case 'closemem':clearTimeout(ui.memT);ui.mem=null;ui.backFromMem=true;render();break;
-    case 'face':if(ui.modal&&ui.modal.kind==='chart') ui.modal=null;ui.sheet={f:+b.dataset.f};ui.notesNot=false;render();break;
+    case 'face':if(ui.modal&&ui.modal.kind==='chart') ui.modal=null;ui.sheet=ui.mem?{f:+b.dataset.f,t:'notes'}:{f:+b.dataset.f};   // mid-memory you're collecting clues
+     ui.notesNot=false;render();break;
     case 'closesheet':ui.sheet=null;render();break;
     case 'closemodal':{const wasMsg=ui.modal&&ui.modal.kind==='msg';ui.modal=null;if(wasMsg&&S&&S.boon&&S.boon.left>0) openBoon();render();break}
     case 'pickboon':pickBoon(b.dataset.id);break;
@@ -5361,6 +5366,16 @@ document.addEventListener('change',e=>{
 document.addEventListener('keydown',e=>{if(e.target.matches&&e.target.matches('.cnin')) return;
   if(DESK&&S&&S.screen==='play'&&ui.tab==='gather'&&!ui.mem&&!ui.cine&&!ui.pick&&!ui.modal&&!ui.sheet&&(e.key==='ArrowRight'||e.key==='ArrowLeft')){const n=Math.ceil(S.era.n/12),p=(ui.deadPage||0)+(e.key==='ArrowRight'?1:-1);if(p>=0&&p<n){ui.deadPage=p;render()}return}if(ui.cine&&(e.key===' '||e.key==='Enter'||e.key==='ArrowRight')){e.preventDefault();tickCine();return}if(e.key==='Escape'&&ui.cine){endCine();return}if(e.key==='Escape'){if(ui.pick) ui.pick=null;else if(ui.sheet) ui.sheet=null;else if(ui.modal&&ui.modal.kind!=='msg'&&ui.modal.kind!=='boon') ui.modal=null;else if(ui.mem){clearTimeout(ui.memT);ui.mem=null}render()}});
 /* custom notes: submit from the Add button or the keyboard's Enter/Done key */
+/* the memory's Notes tab pulses after a while if this memory holds a clue about its own person that could be tagged
+   and they have no tag of that kind yet (voice -> homeland, role -> role, family -> related to, name or monogram -> name) */
+const NOTE_PULSE_MS=20000,HINT_TAG={origin:'home',role:'role',kin:'rel',name:'name',initials:'name'};
+function needsNote(i){const era=S.era,s=era&&era.scenes[i];if(!s||era.sealed[s.victim]) return false;
+  const f=s.victim,p=pnote(f),hs=(s.hints||[]).concat((s.tags||[]).map(t=>({f:t.f,t:t.kind==='initials'?'initials':t.kind==='role'?'role':null})));
+  return hs.some(h=>h.f===f&&HINT_TAG[h.t]&&!p[HINT_TAG[h.t]].some(v=>!tagNeg(v)))}
+function notesPulseCheck(){const key=S&&S.era&&ui.mem&&!ui.cine?ui.mem.i:null;
+  if(key===ui._pk) return;ui._pk=key;clearTimeout(ui._pT);ui.notesPulse=null;if(key==null) return;
+  ui._pT=setTimeout(()=>{if(!ui.mem||ui.mem.i!==key||ui.cine||(ui.memTab||'story')==='notes'||!needsNote(key)) return;
+    ui.notesPulse=key;document.querySelectorAll('.memory .mt[data-t="notes"]').forEach(b=>b.classList.add('npulse'))},NOTE_PULSE_MS)}
 /* phones: the mark buttons in the memory's bottom row line up exactly with the page dots above them */
 function alignMarks(){const g=document.querySelector('.memory .memnav .markbtns');if(!g||DESK) return;g.style.transform='';
   const d=document.querySelector('.memory .mtab.on .pdots')||document.querySelector('.memory .mtab.on');if(!d) return;
