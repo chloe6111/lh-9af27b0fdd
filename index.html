@@ -9,7 +9,7 @@
 /* Live site: the page itself can be cached for a while after a publish, while maps.js etc. come fresh, so an old page
    could show new data. version.txt holds the build stamp; if it differs, load the page again under a new URL.
    BUILD stays 'dev' in the project; stamp_build.py writes the stamp into dist/index.html and dist/version.txt. */
-(function(){var BUILD='20260929133651';if(BUILD==='dev'||window!==window.top||!window.fetch||location.protocol==='file:') return;
+(function(){var BUILD='20260929134336';if(BUILD==='dev'||window!==window.top||!window.fetch||location.protocol==='file:') return;
   fetch('version.txt?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.ok?r.text():''}).then(function(v){
     v=(v||'').trim();if(!v||v===BUILD) return;
     try{var k='lh-build-'+v;if(sessionStorage.getItem(k)) return;sessionStorage.setItem(k,'1')}catch(e){return}
@@ -5291,8 +5291,7 @@ document.addEventListener('click',e=>{
     case 'gnotedel':S.era.gnotes.splice(+b.dataset.i,1);save();render();break;
     case 'tagged':{const {tk,f}=ui.pick,p=pnote(f),v=tagConv(tk,b.dataset.v),i=p[tk].indexOf(v);
       if(i>=0) p[tk].splice(i,1);else p[tk].push(v);
-      const tr=document.querySelector('.picker .ptrack')||document.querySelector('.picker .pbody'),sl=tr?tr.scrollLeft:0,st=tr?tr.scrollTop:0;save();render();
-      const t2=document.querySelector('.picker .ptrack')||document.querySelector('.picker .pbody');if(t2){t2.scrollLeft=sl;t2.scrollTop=st}break}
+      b.classList.toggle('on',i<0);save();break}   // just this tile changes: no redraw, so no flash and the page stays put (Done redraws the notes)
     case 'untag':{const p=pnote(+b.dataset.f),k=b.dataset.k,v=tagConv(k,b.dataset.v),i=p[k].indexOf(v);if(i>=0) p[k].splice(i,1);save();render();break}
     case 'addnote':addNote(+b.dataset.f);break;
     case 'delnote':pnote(+b.dataset.f).custom.splice(+b.dataset.i,1);save();render();break;
