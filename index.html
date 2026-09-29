@@ -9,7 +9,7 @@
 /* Live site: the page itself can be cached for a while after a publish, while maps.js etc. come fresh, so an old page
    could show new data. version.txt holds the build stamp; if it differs, load the page again under a new URL.
    BUILD stays 'dev' in the project; stamp_build.py writes the stamp into dist/index.html and dist/version.txt. */
-(function(){var BUILD='20260929152007';if(BUILD==='dev'||window!==window.top||!window.fetch||location.protocol==='file:') return;
+(function(){var BUILD='20260929152414';if(BUILD==='dev'||window!==window.top||!window.fetch||location.protocol==='file:') return;
   fetch('version.txt?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.ok?r.text():''}).then(function(v){
     v=(v||'').trim();if(!v||v===BUILD) return;
     try{var k='lh-build-'+v;if(sessionStorage.getItem(k)) return;sessionStorage.setItem(k,'1')}catch(e){return}
@@ -1032,8 +1032,8 @@ html.desk .memnav [data-act="memi"],html.desk .memnav [data-act="closemem"]{widt
 @keyframes lh-npulse{0%,100%{box-shadow:0 0 0 2px rgba(232,200,112,.6)}50%{box-shadow:0 0 0 5px rgba(232,200,112,.45),0 0 18px rgba(232,200,112,.35)}}
 html.nomotion .mt.npulse:not(.on),.mt.npulse.ndone{animation:none!important;box-shadow:0 0 0 2px rgba(232,200,112,.6)}
 /* Notes: the Not switch sits centred on the Tags heading line, as big as the heading, so it doesn't read as a tag */
-.tagshead{position:relative}
-.tagshead .nnot{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font:inherit;font-size:1em;line-height:1;
+.tagshead{position:relative}.memh.tagshead{margin-bottom:12px!important}   /* a little room under the Not switch */
+.tagshead .nnot{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font:inherit;font-family:var(--body);font-weight:500;font-size:1em;line-height:1;
   padding:3px 16px 4px;border-radius:999px;border:1.5px solid #6a5a36;background:transparent;color:#ece4cf;cursor:pointer}
 .tagshead .nnot.on{background:#6a2a22;border-color:#c0594a;color:#fff}
 /* typing a note on a touch screen: the box sits at the top, above the on-screen keyboard */
