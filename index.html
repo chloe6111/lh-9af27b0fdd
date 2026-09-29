@@ -9,7 +9,7 @@
 /* Live site: the page itself can be cached for a while after a publish, while maps.js etc. come fresh, so an old page
    could show new data. version.txt holds the build stamp; if it differs, load the page again under a new URL.
    BUILD stays 'dev' in the project; stamp_build.py writes the stamp into dist/index.html and dist/version.txt. */
-(function(){var BUILD='20260929114820';if(BUILD==='dev'||window!==window.top||!window.fetch||location.protocol==='file:') return;
+(function(){var BUILD='20260929115402';if(BUILD==='dev'||window!==window.top||!window.fetch||location.protocol==='file:') return;
   fetch('version.txt?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.ok?r.text():''}).then(function(v){
     v=(v||'').trim();if(!v||v===BUILD) return;
     try{var k='lh-build-'+v;if(sessionStorage.getItem(k)) return;sessionStorage.setItem(k,'1')}catch(e){return}
@@ -1006,8 +1006,19 @@ html.marking .memory .snt:hover{outline:1px dashed rgba(232,200,112,.6)}
 .markhint{margin:2px 0 10px}
 /* tag and marking buttons in Notes: one medium size (the phone and desktop layouts would otherwise make them small or full-size) */
 .ntagadd .btn,.markbtns .btn{min-height:40px!important;padding:6px 16px!important;font-size:.95rem!important;line-height:1.2}
-.markbar{position:fixed;top:8px;left:50%;transform:translateX(-50%);z-index:90;display:flex;align-items:center;gap:12px;padding:6px 6px 6px 16px;border-radius:999px;background:#1b1812;border:1.5px solid #e8c870;box-shadow:0 8px 30px rgba(0,0,0,.6);color:#f3ecd8;font-size:.95rem;white-space:nowrap}
+.markbar-old{position:fixed;top:8px;left:50%;transform:translateX(-50%);z-index:90;display:flex;align-items:center;gap:12px;padding:6px 6px 6px 16px;border-radius:999px;background:#1b1812;border:1.5px solid #e8c870;box-shadow:0 8px 30px rgba(0,0,0,.6);color:#f3ecd8;font-size:.95rem;white-space:nowrap}
 .markbar.mb-x{border-color:#c0594a}.markbar .btn{min-height:32px;padding:2px 18px}
+.markbtns .markbtn{min-width:44px;padding:6px 12px!important}
+html.desk .memnav .markbtns .markbtn{min-height:44px!important}html.desk .memnav .markbtns{flex:1}html.desk .memnav .memact:first-child{flex:0 0 auto}
+.hlsw{display:inline-block;width:20px;height:14px;border-radius:3px;background:#e8c870;box-shadow:0 0 0 2px rgba(232,200,112,.35)}
+.xsw{font-weight:700;font-size:1.05rem;color:#e07a6a;line-height:1}
+.markbtn.on .xsw{color:#fff}
+@media (orientation:landscape) and (max-height:540px){
+  .memnav:not(.onstory) .markbtns{display:none}
+  .memnav .memtime{flex:0 0 auto!important}.memnav .memtime .btn{flex:none;min-width:44px;padding-left:12px;padding-right:12px;font-size:1.1rem}
+  .memnav .markbtns{flex:1 1 auto!important}
+  .memnav .markbtns{gap:6px}.memnav .markbtns .markbtn{min-height:0!important;height:100%;padding:0 10px!important}
+}
 /* typing a note on a touch screen: the box sits at the top, above the on-screen keyboard */
 html.kbtyping .cnadd,html.kbtyping .gnadd{position:fixed!important;top:10px;left:12px;right:12px;z-index:400;margin:0!important;padding:10px;border-radius:14px;background:#1b1812;border:1.5px solid #d8b86a;box-shadow:0 10px 40px rgba(0,0,0,.7);display:flex;gap:8px}
 html.kbtyping .cnadd .cnin,html.kbtyping .gnadd .cnin{flex:1;font-size:16px}
@@ -4904,20 +4915,21 @@ function memoryView(){
     <h3 class="memh">${labelHTML(s.victim)} also appears in</h3>`+(also.length
     ?`<div class="present seenchips">${also.map(i=>memChip(i)).join('')}</div>`
     :`<p class="small light-muted">No other memory.</p>`));
-  const mb=(id,l)=>`<button class="btn ghost light markbtn mb-${id}${ui.markMode===id?' on':''}" data-act="markmode" data-m="${id}" aria-pressed="${ui.markMode===id}">${l}</button>`;
-  h+=sec('notes',`<div class="markbtns" title="Turn one on, then tap sentences in the memory. Tap a marked sentence again to clear it.">${mb('h','Highlight')}${mb('x','Cross out')}</div>`+notesBody(s.victim,' light')).replace('<section class="mtab','<section data-page="blocks" class="mtab');
+  // highlight / cross out: small icon buttons beside the memory's own buttons (see memnav)
+  const mb=(id,l,ico)=>`<button class="btn ghost light markbtn mb-${id}${ui.markMode===id?' on':''}" data-act="markmode" data-m="${id}" aria-pressed="${ui.markMode===id}" aria-label="${l}" title="${l}: turn on, then tap sentences in the memory. Tap a marked sentence again to clear it.">${ico}</button>`;
+  const marks=`<div class="memact markbtns">${mb('h','Highlight','<span class="hlsw" aria-hidden="true"></span>')}${mb('x','Cross out','<span class="xsw" aria-hidden="true">✕</span>')}</div>`;
+  h+=sec('notes',notesBody(s.victim,' light')).replace('<section class="mtab','<section data-page="blocks" class="mtab');
   // phones: the memory and its notes are separate tabs, so marking happens on the Memory tab under a small bar
-  if(ui.markMode&&!DESK) h+=`<div class="markbar mb-${ui.markMode}"><span>${ui.markMode==='h'?'Highlighting':'Crossing out'}: tap sentences</span><button class="btn primary" data-act="markmode" data-m="off">Done</button></div>`;
   h+=sec('fate',`<h3 class="memh">Your verdict on ${labelShort(s.victim)}</h3><div class="memform">${answerForm(s.victim)}</div>
     ${era.sealed[s.victim]?'':`<button class="btn ghost light debug" data-act="debugsolve" data-f="${s.victim}">Debug: fill in answer</button>`}`);
-  if(DESK) return deskMemory(h,m,s,era);
-  h+=`<div class="memnav"><div class="memact">${m.i>0?`<button class="btn ghost light" data-act="memi" data-i="${m.i-1}"><span class="lfull">Earlier in time</span><span class="lshort">‹ Earlier</span></button>`:''}${m.i<era.scenes.length-1?`<button class="btn ghost light" data-act="memi" data-i="${m.i+1}"><span class="lfull">Later in time</span><span class="lshort">Later ›</span></button>`:''}</div>
+  if(DESK) return deskMemory(h,m,s,era,marks);
+  h+=`<div class="memnav${(ui.memTab||'story')==='story'?' onstory':''}"><div class="memact memtime">${m.i>0?`<button class="btn ghost light" data-act="memi" data-i="${m.i-1}" aria-label="Earlier in time"><span class="lfull">Earlier in time</span><span class="lshort">‹</span></button>`:''}${m.i<era.scenes.length-1?`<button class="btn ghost light" data-act="memi" data-i="${m.i+1}" aria-label="Later in time"><span class="lfull">Later in time</span><span class="lshort">›</span></button>`:''}</div>${marks}
     <div class="memact"><button class="btn ghost light" data-act="replay" data-i="${m.i}"><span class="lfull">Watch the scene again</span><span class="lshort">Watch again</span></button></div>
     <div class="memact"><button class="btn primary" data-act="closemem">Back to the dead</button></div></div>`;
   return h+`</div></div></div>`;
 }
 /* desktop memory screen, built from the sections memoryView() has made: portrait | story | side column with tabs */
-function deskMemory(h,m,s,era){
+function deskMemory(h,m,s,era,marks){
   const secs={};h.replace(/<section[^>]*data-t="(\w+)"[^>]*>[\s\S]*?<\/section>/g,(x,id)=>{secs[id]=x;return x});
   const side=['people','notes','fate'].includes(ui.memTab)?ui.memTab:'fate';
   const on=(x,id)=>x.replace(/class="mtab( on)?"/,`class="mtab${id===side?' on':''}"`);
@@ -4927,7 +4939,7 @@ function deskMemory(h,m,s,era){
   return `${top}<div class="dmem">${left}${story}<div class="dside"><div class="memtabs" role="tablist">${[['fate','Verdict'],['people','People'],['notes','Notes']].map(([id,l])=>`<button role="tab" class="mt${side===id?' on':''}" aria-selected="${side===id}" data-act="memtab" data-t="${id}">${l}</button>`).join('')}</div>
     ${on(secs.fate,'fate')}${on(secs.people,'people')}${on(secs.notes,'notes')}</div></div>
     <div class="memnav"><div class="memact">${m.i>0?`<button class="btn ghost light" data-act="memi" data-i="${m.i-1}">‹ Earlier in time</button>`:''}${m.i<era.scenes.length-1?`<button class="btn ghost light" data-act="memi" data-i="${m.i+1}">Later in time ›</button>`:''}</div>
-    <div class="memact"><button class="btn ghost light" data-act="replay" data-i="${m.i}">Watch the scene again</button><button class="btn primary" data-act="closemem">Back to the dead</button></div></div></div>`;
+    ${marks||''}<div class="memact"><button class="btn ghost light" data-act="replay" data-i="${m.i}">Watch the scene again</button><button class="btn primary" data-act="closemem">Back to the dead</button></div></div></div>`;
 }
 function manifestView(){return `<div class="manifestv" data-page="grid">${manifestInner()}</div>`}
 function manifestInner(){
@@ -5254,7 +5266,9 @@ document.addEventListener('click',e=>{
     case 'sheettab':ui.sheet.t=b.dataset.t;ui.notesNot=false;render();break;
     case 'opentag':ui.pick={kind:'tag',tk:b.dataset.k,f:+b.dataset.f,not:!!ui.notesNot};render();break;
     case 'nottoggle':ui.notesNot=!ui.notesNot;render();break;
-    case 'markmode':{const md=b.dataset.m;if(md==='off'||ui.markMode===md){ui.markMode=null;if(!DESK) ui.memTab='notes'}else{ui.markMode=md;if(!DESK) ui.memTab='story'}render();break}
+    case 'markmode':{const md=b.dataset.m;ui.markMode=md==='off'||ui.markMode===md?null:md;
+      document.querySelectorAll('.markbtn').forEach(x=>{const on=x.dataset.m===ui.markMode;x.classList.toggle('on',on);x.setAttribute('aria-pressed',on)});
+      document.documentElement.classList.toggle('marking',!!ui.markMode);break}
     case 'gnname':{const inp=document.querySelector('.gnin');ui.gDraft=Object.assign({},ui.gDraft,{v:inp?inp.value:''});if(e.target.closest('[data-act="gnclear"]')){ui.gDraft.c=null;render();break}ui.pick={kind:'gname'};render();break}
     case 'gnclear':{const inp=document.querySelector('.gnin');ui.gDraft={v:inp?inp.value:'',c:null};render();break}
     case 'gnamed':ui.gDraft=Object.assign({},ui.gDraft,{c:b.dataset.v===''?null:+b.dataset.v});ui.pick=null;render();break;
