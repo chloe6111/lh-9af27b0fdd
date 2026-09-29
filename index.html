@@ -9,7 +9,7 @@
 /* Live site: the page itself can be cached for a while after a publish, while maps.js etc. come fresh, so an old page
    could show new data. version.txt holds the build stamp; if it differs, load the page again under a new URL.
    BUILD stays 'dev' in the project; stamp_build.py writes the stamp into dist/index.html and dist/version.txt. */
-(function(){var BUILD='20260929150147';if(BUILD==='dev'||window!==window.top||!window.fetch||location.protocol==='file:') return;
+(function(){var BUILD='20260929150943';if(BUILD==='dev'||window!==window.top||!window.fetch||location.protocol==='file:') return;
   fetch('version.txt?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.ok?r.text():''}).then(function(v){
     v=(v||'').trim();if(!v||v===BUILD) return;
     try{var k='lh-build-'+v;if(sessionStorage.getItem(k)) return;sessionStorage.setItem(k,'1')}catch(e){return}
@@ -5221,9 +5221,9 @@ const TIPS=[
    text:()=>`One or both were wrong, so you lost a heart.<br><b>You have ${S.run.hearts} left</b>; lose them all and the chronicle ends.<br><b>Every successful consultation gains a missing heart back.</b>`},
   {id:'verdict',when:()=>!!ui.mem&&!ui.cine&&!ui.modal&&!ui.pick&&!ui.sheet,at:()=>$vis('.mtab.on[data-t="fate"] .memform'),
    text:()=>'Find out: <b>who they were, how they died or if they survived.</b><br>You can change these answers at <b>any time.</b><br><b>Nothing is final until you Consult the Ledger.</b>'},
-  {id:'people',wait:3000,when:()=>!!ui.mem&&!ui.cine&&!ui.modal&&!ui.pick&&!ui.sheet,at:()=>$vis('.mtab.on[data-t="people"] .present .chip'),
+  {id:'people',wait:2000,when:()=>!!ui.mem&&!ui.cine&&!ui.modal&&!ui.pick&&!ui.sheet,at:()=>$vis('.mtab.on[data-t="people"] .present .chip'),
    text:()=>'<b>Tap any person’s bubble</b> to open their card.'},
-  {id:'npulse',when:()=>!!ui.mem&&ui.notesPulse===ui.mem.i&&!ui.cine&&!ui.modal&&!ui.pick&&!ui.sheet,at:()=>$vis('.memory .mt.npulse'),
+  {id:'npulse',wait:4000,when:()=>!!ui.mem&&ui.notesPulse===ui.mem.i&&!ui.cine&&!ui.modal&&!ui.pick&&!ui.sheet,at:()=>$vis('.memory .mt.npulse'),
    text:()=>{const f=S.era.scenes[ui.mem.i].victim;return `<b>This memory holds a clue about ${labelShort(f)} you haven’t tagged yet.</b><br>Open Notes to tag it.`}},
   {id:'notes',wait:3000,when:()=>!!ui.mem&&!ui.cine&&!ui.modal&&!ui.pick&&!ui.sheet,at:()=>$vis('.mtab.on[data-t="notes"] .ntagadd'),   // the memory's Notes tab only
    text:()=>'<b>Tag what you know about this person.</b><br>This is critical for gathering and narrowing down information later.'},
@@ -5236,7 +5236,7 @@ const TIPS=[
      const all=[...document.querySelectorAll('.manifestv .row .nm')].filter(full);
      const el=all.find(e=>e.textContent.includes('?'))||all.find(e=>e.classList.contains('torn'));ui._tornEx=el&&el.textContent.includes('?')?el.textContent:null;return el?el.closest('.row')||el:null},
    text:()=>'<b>Each ? is a letter you can’t read.</b><br><b>[name torn away]</b> means the whole name is gone.<br>Solve through deduction or find relics to tell what they are.'},
-  {id:'relics',wait:4000,when:()=>S.screen==='play'&&ui.tab==='satchel'&&!ui.modal&&!ui.pick&&!ui.sheet&&!ui.mem,at:()=>$vis('#app [data-act="tool"]:not([disabled])'),
+  {id:'relics',wait:2000,when:()=>S.screen==='play'&&ui.tab==='satchel'&&!ui.modal&&!ui.pick&&!ui.sheet&&!ui.mem,at:()=>$vis('#app [data-act="tool"]:not([disabled])'),
    text:()=>'Press <b>Use</b> to activate a non-passive relic.'},
   {id:'num',when:onDead,at:()=>$vis('.pcard .pnum'),
    text:()=>'This circle is the person’s number.<br>Until you <b>prove</b> who they are, <b>“#1” is their name.</b>'},
