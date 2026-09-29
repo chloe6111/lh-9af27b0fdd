@@ -9,7 +9,7 @@
 /* Live site: the page itself can be cached for a while after a publish, while maps.js etc. come fresh, so an old page
    could show new data. version.txt holds the build stamp; if it differs, load the page again under a new URL.
    BUILD stays 'dev' in the project; stamp_build.py writes the stamp into dist/index.html and dist/version.txt. */
-(function(){var BUILD='20260929150943';if(BUILD==='dev'||window!==window.top||!window.fetch||location.protocol==='file:') return;
+(function(){var BUILD='20260929152007';if(BUILD==='dev'||window!==window.top||!window.fetch||location.protocol==='file:') return;
   fetch('version.txt?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.ok?r.text():''}).then(function(v){
     v=(v||'').trim();if(!v||v===BUILD) return;
     try{var k='lh-build-'+v;if(sessionStorage.getItem(k)) return;sessionStorage.setItem(k,'1')}catch(e){return}
@@ -1031,6 +1031,11 @@ html.desk .memnav [data-act="memi"],html.desk .memnav [data-act="closemem"]{widt
 .mt.npulse:not(.on){animation:lh-npulse 1.8s ease-in-out 2;border-color:#e8c870;color:#f3ecd8;box-shadow:0 0 0 2px rgba(232,200,112,.6)}   /* two pulses, then a solid gold border */
 @keyframes lh-npulse{0%,100%{box-shadow:0 0 0 2px rgba(232,200,112,.6)}50%{box-shadow:0 0 0 5px rgba(232,200,112,.45),0 0 18px rgba(232,200,112,.35)}}
 html.nomotion .mt.npulse:not(.on),.mt.npulse.ndone{animation:none!important;box-shadow:0 0 0 2px rgba(232,200,112,.6)}
+/* Notes: the Not switch sits centred on the Tags heading line, as big as the heading, so it doesn't read as a tag */
+.tagshead{position:relative}
+.tagshead .nnot{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font:inherit;font-size:1em;line-height:1;
+  padding:3px 16px 4px;border-radius:999px;border:1.5px solid #6a5a36;background:transparent;color:#ece4cf;cursor:pointer}
+.tagshead .nnot.on{background:#6a2a22;border-color:#c0594a;color:#fff}
 /* typing a note on a touch screen: the box sits at the top, above the on-screen keyboard */
 html.kbtyping .cnadd,html.kbtyping .gnadd{position:fixed!important;top:10px;left:12px;right:12px;z-index:400;margin:0!important;padding:10px;border-radius:14px;background:#1b1812;border:1.5px solid #d8b86a;box-shadow:0 10px 40px rgba(0,0,0,.7);display:flex;gap:8px}
 html.kbtyping .cnadd .cnin,html.kbtyping .gnadd .cnin{flex:1;font-size:16px}
@@ -4849,8 +4854,8 @@ function relicNotes(f){
 function notesBody(f,lt){
   const p=pnote(f),g=`btn ghost${lt}`;
   const tags=Object.keys(TAG_KINDS).flatMap(k=>p[k].map(v=>`<button class="ntag t-${k}${tagNeg(v)?' neg':''}" data-act="untag" data-f="${f}" data-k="${k}" data-v="${esc(String(v))}" aria-label="Remove tag"><span class="ntt">${tagText(k,v)}</span><span aria-hidden="true">✕</span></button>`));
-  let h=`<h3 class="memh">Tags</h3>`+(tags.length?`<div class="ntags">${tags.join('')}</div>`:'')
-    +`<div class="ntagadd"><button class="${g} nnot${ui.notesNot?' on':''}" data-act="nottoggle" aria-pressed="${!!ui.notesNot}" title="Add tags that rule something out">Not</button>${Object.entries(TAG_KINDS).map(([k,l])=>`<button class="${g}" data-act="opentag" data-k="${k}" data-f="${f}">+ ${ui.notesNot?(k==='name'?'Not named':'Not '+l.toLowerCase()):l}</button>`).join('')}</div>`;
+  let h=`<h3 class="memh tagshead">Tags<button class="nnot${ui.notesNot?' on':''}" data-act="nottoggle" aria-pressed="${!!ui.notesNot}" title="Add tags that rule something out">Not</button></h3>`+(tags.length?`<div class="ntags">${tags.join('')}</div>`:'')
+    +`<div class="ntagadd">${Object.entries(TAG_KINDS).map(([k,l])=>`<button class="${g}" data-act="opentag" data-k="${k}" data-f="${f}">+ ${ui.notesNot?(k==='name'?'Not named':'Not '+l.toLowerCase()):l}</button>`).join('')}</div>`;
   const rn=relicNotes(f);
   h+=`<h3 class="memh">From relics</h3>`+(rn.length?rn.map(x=>`<div class="note">${x}</div>`).join(''):`<p class="small light-muted nnone">Nothing yet.</p>`);
   h+=`<h3 class="memh">Your notes</h3>`+p.custom.map((t,i)=>`<div class="cnote"><span>${esc(t)}</span><button class="cnx" data-act="delnote" data-f="${f}" data-i="${i}" aria-label="Delete note">✕</button></div>`).join('');
