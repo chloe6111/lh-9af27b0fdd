@@ -9,7 +9,7 @@
 /* Live site: the page itself can be cached for a while after a publish, while maps.js etc. come fresh, so an old page
    could show new data. version.txt holds the build stamp; if it differs, load the page again under a new URL.
    BUILD stays 'dev' in the project; stamp_build.py writes the stamp into dist/index.html and dist/version.txt. */
-(function(){var BUILD='20260929131606';if(BUILD==='dev'||window!==window.top||!window.fetch||location.protocol==='file:') return;
+(function(){var BUILD='20260929133651';if(BUILD==='dev'||window!==window.top||!window.fetch||location.protocol==='file:') return;
   fetch('version.txt?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.ok?r.text():''}).then(function(v){
     v=(v||'').trim();if(!v||v===BUILD) return;
     try{var k='lh-build-'+v;if(sessionStorage.getItem(k)) return;sessionStorage.setItem(k,'1')}catch(e){return}
@@ -4723,7 +4723,7 @@ function playScreen(){
     satchel:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 9h14l-1.2 11H6.2z"/><path d="M9 9V7a3 3 0 0 1 6 0v2"/><path d="M5 13h14"/></svg>`,
     records:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3l2.5 5.5L20 9l-4 4 1 6-5-3-5 3 1-6-4-4 5.5-.5z"/></svg>`};
   return `<header class="top"><div class="wrap"><div class="era"><b>${esc(E.title)}</b><span>Era ${run.idx+1} of ${ERA_COUNT} · ${era.sealed.filter(Boolean).length} of ${era.n} sealed</span></div>${hearts()}
-    <div class="topact">${DESK&&ui.tab==='gather'?'<button class="btn ghost tbtn dbgtwo" data-act="debugtwo" title="Debug: fill in two correct answers">Debug: solve 2</button>':''}<button class="btn ghost tbtn sortbtn" data-act="sortcycle" title="Change the order of The Dead">Sort: ${SORT_LABEL[ui.sort||'num-asc']}</button><span class="tprog"><b>${filled}</b>/${open.length}<span class="tlong"> answered</span></span>${SHOW_CHART?'<button class="btn ghost tbtn" data-act="chart">Hierarchy</button>':''}<button class="btn seal tbtn${sameAsFailed(S.era)?' heard':''}" data-act="consult" ${filled<need?'disabled':''}>Consult<span class="tlong"> the Ledger</span></button></div></div></header>
+    <div class="topact">${DESK&&ui.tab==='gather'?'<button class="btn ghost tbtn dbgtwo" data-act="debugtwo" title="Debug: fill in two correct answers">Debug: solve 2</button>':''}<button class="btn ghost tbtn sortbtn" data-act="sortcycle" title="Change the order of The Dead">Sort: ${SORT_LABEL[ui.sort||'num-asc']}</button><span class="tprog"><b>${filled}</b>/${open.length}<span class="tlong"> answered</span></span>${SHOW_CHART?'<button class="btn ghost tbtn" data-act="chart">Hierarchy</button>':''}<button class="btn seal tbtn${sameAsFailed(S.era)?' heard':''}" data-act="consult" ${filled<need?'disabled':''}><span>Consult<span class="tlong"> the Ledger</span></span></button></div></div></header>
   <main><div class="wrap">${body}</div></main>
   <div class="dock"><div class="actionbar"><div class="wrap"><div class="prog"><b>${filled}</b> of ${open.length} open fates answered<br><span class="small">${need<2?'The last one must be right':'2 right answers seal them'}</span></div>
   <button class="btn seal${sameAsFailed(S.era)?' heard':''}" data-act="consult" ${filled<need?'disabled':''}>Consult the Ledger</button></div></div>
@@ -5233,8 +5233,8 @@ const TIPS=[
    text:()=>'This circle is the person’s number. <b>Until you prove who they are, “#1” is their name</b>: in memories, pickers and notes alike.'},
   {id:'time',when:onDead,at:()=>$vis('.pcard .ptime'),
    text:()=>'Once you’ve watched someone’s memory, the corner shows <b>the time it happened</b> that night. Line the times up to work out who was still alive when.'},
-  {id:'consult',when:()=>onDead()&&ui.backFromMem,at:()=>$vis('.topact [data-act="consult"]')||$vis('[data-act="consult"]'),
-   text:()=>`When you think you know someone, fill in their Verdict, then <b>Consult the Ledger</b>. If at least two of your open answers are fully right, it seals two of them and <b>you regain a heart</b> (up to ${START_HEARTS}). If not, you lose a heart.`},
+  {id:'consult',when:()=>onDead()&&!ui.modal&&!ui.pick&&!ui.sheet,at:()=>$vis('.topact [data-act="consult"]:not([disabled])')||$vis('[data-act="consult"]:not([disabled])'),   // once two or more answers are filled in
+   text:()=>`You’ve filled in enough verdicts to <b>Consult the Ledger</b>. If at least two of your open answers are fully right, it seals two of them and <b>you regain a heart</b> (up to ${START_HEARTS}). If not, you lose a heart.`},
 ];
 function tutorialCheck(){
   if(!S||!S.run||!S.run.tutorial||ui.cine||document.getElementById('tipov')) return;
@@ -5371,9 +5371,21 @@ document.addEventListener('keydown',e=>{if(e.target.matches&&e.target.matches('.
 /* the memory's Notes tab pulses after a while if this memory holds a clue about its own person that could be tagged
    and they have no tag of that kind yet (voice -> homeland, role -> role, family -> related to, name or monogram -> name) */
 const NOTE_PULSE_MS=20000,HINT_TAG={origin:'home',role:'role',kin:'rel',name:'name',initials:'name'};
-function needsNote(i){const era=S.era,s=era&&era.scenes[i];if(!s||era.sealed[s.victim]) return false;
+const KIN_WORDS=['My husband','My wife','Brother','Sister','My son','My daughter','Father','Mother'];
+/* the sentences of memory i that carry a clue of type t about face f (so crossing them all out settles the clue) */
+function hintBeats(i,f,t){const era=S.era,s=era.scenes[i],E=E_(),c=era.chars[era.f2c[f]],F=`{F${f}}`,b=s.beats||[];
+  const has=(x,y)=>x.includes(F)&&(!y||x.includes(y));let test;
+  if(t==='role') test=x=>has(x,roleOf(E,c.role).tell);
+  else if(t==='origin'){const o=E.origins[c.origin];test=x=>has(x,o.L||o.A)}
+  else if(t==='name') test=x=>x.includes(c.first+'!');
+  else if(t==='initials'){const tg=(s.tags||[]).find(g=>g.f===f&&g.kind==='initials');test=x=>tg&&x.includes(tg.label.replace(/”\.?$/,'').slice(-6))}
+  else if(t==='kin') test=x=>has(x)&&KIN_WORDS.some(w=>x.includes('“'+w));
+  else return [];
+  return b.map((x,k)=>test(x)?k:-1).filter(k=>k>=0)}
+function needsNote(i){const era=S.era,s=era&&era.scenes[i];if(!s||era.sealed[s.victim]) return false;   // solved people never pulse
   const f=s.victim,p=pnote(f),hs=(s.hints||[]).concat((s.tags||[]).map(t=>({f:t.f,t:t.kind==='initials'?'initials':t.kind==='role'?'role':null})));
-  return hs.some(h=>h.f===f&&HINT_TAG[h.t]&&!p[HINT_TAG[h.t]].some(v=>!tagNeg(v)))}
+  const crossed=h=>{const bs=hintBeats(i,f,h.t);return bs.length>0&&bs.every(k=>(era.marks||{})[i+':'+k]==='x')};
+  return hs.some(h=>h.f===f&&HINT_TAG[h.t]&&!p[HINT_TAG[h.t]].some(v=>!tagNeg(v))&&!crossed(h))}
 /* the delay only counts while the memory's text is on screen (phones: the Memory tab; desktop: always) and the app is open */
 function notesPulseCheck(){const key=S&&S.era&&ui.mem&&!ui.cine?ui.mem.i:null;
   if(key===ui._pk) return;ui._pk=key;clearInterval(ui._pT);ui.notesPulse=null;if(key==null) return;
@@ -5404,6 +5416,7 @@ document.addEventListener('click',e=>{
   const era=S.era,k=ui.mem.i+':'+sp.dataset.b,marks=era.marks=era.marks||{},md=ui.markMode;
   if(marks[k]===md) delete marks[k];else marks[k]=md;
   sp.classList.remove('mk-h','mk-x');if(marks[k]) sp.classList.add('mk-'+marks[k]);
+  if(ui.notesPulse===ui.mem.i&&!needsNote(ui.mem.i)){ui.notesPulse=null;document.querySelectorAll('.memory .mt.npulse').forEach(b=>b.classList.remove('npulse','ndone'))}
   save();
 },true);
 document.addEventListener('submit',e=>{const fm=e.target.closest('.seedform');if(!fm) return;e.preventDefault();
