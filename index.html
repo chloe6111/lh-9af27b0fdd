@@ -9,7 +9,7 @@
 /* Live site: the page itself can be cached for a while after a publish, while maps.js etc. come fresh, so an old page
    could show new data. version.txt holds the build stamp; if it differs, load the page again under a new URL.
    BUILD stays 'dev' in the project; stamp_build.py writes the stamp into dist/index.html and dist/version.txt. */
-(function(){var BUILD='20260928231512';if(BUILD==='dev'||window!==window.top||!window.fetch||location.protocol==='file:') return;
+(function(){var BUILD='20260928232214';if(BUILD==='dev'||window!==window.top||!window.fetch||location.protocol==='file:') return;
   fetch('version.txt?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.ok?r.text():''}).then(function(v){
     v=(v||'').trim();if(!v||v===BUILD) return;
     try{var k='lh-build-'+v;if(sessionStorage.getItem(k)) return;sessionStorage.setItem(k,'1')}catch(e){return}
@@ -1004,6 +1004,8 @@ html.marking .memory .snt{cursor:pointer;border-radius:3px}
 html.marking .memory .snt:hover{outline:1px dashed rgba(232,200,112,.6)}
 .markbtns{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 4px}.markbtn.mb-h.on{background:#6b5a1e;border-color:#e8c870;color:#fff}.markbtn.mb-x.on{background:#5a241e;border-color:#c0594a;color:#fff}
 .markhint{margin:2px 0 10px}
+/* tag and marking buttons in Notes: one medium size (the phone and desktop layouts would otherwise make them small or full-size) */
+.ntagadd .btn,.markbtns .btn{min-height:40px!important;padding:6px 16px!important;font-size:.95rem!important;line-height:1.2}
 .markbar{position:fixed;top:8px;left:50%;transform:translateX(-50%);z-index:90;display:flex;align-items:center;gap:12px;padding:6px 6px 6px 16px;border-radius:999px;background:#1b1812;border:1.5px solid #e8c870;box-shadow:0 8px 30px rgba(0,0,0,.6);color:#f3ecd8;font-size:.95rem;white-space:nowrap}
 .markbar.mb-x{border-color:#c0594a}.markbar .btn{min-height:32px;padding:2px 18px}
 /* typing a note on a touch screen: the box sits at the top, above the on-screen keyboard */
