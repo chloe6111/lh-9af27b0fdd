@@ -9,7 +9,7 @@
 /* Live site: the page itself can be cached for a while after a publish, while maps.js etc. come fresh, so an old page
    could show new data. version.txt holds the build stamp; if it differs, load the page again under a new URL.
    BUILD stays 'dev' in the project; stamp_build.py writes the stamp into dist/index.html and dist/version.txt. */
-(function(){var BUILD='20260929120833';if(BUILD==='dev'||window!==window.top||!window.fetch||location.protocol==='file:') return;
+(function(){var BUILD='20260929121225';if(BUILD==='dev'||window!==window.top||!window.fetch||location.protocol==='file:') return;
   fetch('version.txt?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.ok?r.text():''}).then(function(v){
     v=(v||'').trim();if(!v||v===BUILD) return;
     try{var k='lh-build-'+v;if(sessionStorage.getItem(k)) return;sessionStorage.setItem(k,'1')}catch(e){return}
@@ -1016,11 +1016,13 @@ html.desk .memnav [data-act="memi"],html.desk .memnav [data-act="closemem"]{widt
 .markbtn.on .xsw{color:#fff}
 @media (orientation:landscape) and (max-height:540px){
   .memnav:not(.onstory) .markbtns{display:none}
-  .memnav .memtime{flex:0 0 auto!important}.memnav .memtime .btn,.memnav .navbtn{flex:none;width:110px;padding-left:6px;padding-right:6px}
+  .memnav .memtime{flex:1 0 auto!important}.memnav .memtime .btn,.memnav .navbtn{flex:none;width:110px;padding-left:6px;padding-right:6px}
   .memnav .markbtns{flex:1 0 auto!important;flex-wrap:nowrap!important}
   .memnav .markbtns{gap:6px;align-items:stretch}.memnav .markbtns .markbtn{min-height:34px!important;width:70px;height:auto;min-width:0;padding:0!important;flex:0 0 70px!important}
   .memnav .markbtns .hlsw{width:15px;height:10px}.memnav .markbtns .xsw{font-size:.9rem}
 }
+.markrow{display:flex;justify-content:center;flex:none;margin:6px 0 2px}.markrow .markbtns{display:flex;gap:10px;margin:0}
+.markrow .markbtn{min-height:34px!important;width:70px;flex:0 0 70px!important;padding:0!important}
 /* typing a note on a touch screen: the box sits at the top, above the on-screen keyboard */
 html.kbtyping .cnadd,html.kbtyping .gnadd{position:fixed!important;top:10px;left:12px;right:12px;z-index:400;margin:0!important;padding:10px;border-radius:14px;background:#1b1812;border:1.5px solid #d8b86a;box-shadow:0 10px 40px rgba(0,0,0,.7);display:flex;gap:8px}
 html.kbtyping .cnadd .cnin,html.kbtyping .gnadd .cnin{flex:1;font-size:16px}
@@ -1043,7 +1045,7 @@ html.kbtyping .cnadd .cnin,html.kbtyping .gnadd .cnin{flex:1;font-size:16px}
 .mapsheet{cursor:pointer}
 /* narrow landscape screens (the unfolded Fold's 700 px frame): shorter top-bar labels so the era title fits */
 @media (orientation:landscape) and (max-height:540px) and (max-width:780px){.topact .tlong{display:none}.memnav .btn{font-size:.74rem;padding-left:4px!important;padding-right:4px!important}.memnav{gap:5px}.memnav .lmid{display:none}.memnav .lxs{display:inline}
-  .memnav .memtime .btn,.memnav .navbtn{width:64px}.memnav .markbtns .markbtn{width:50px;flex:0 0 50px!important}}
+  .memnav .memtime .btn,.memnav .navbtn{width:84px}.memnav [data-act="replay"] .lmid{display:inline}.memnav [data-act="replay"] .lxs{display:none}.memnav .markbtns .markbtn{width:50px;flex:0 0 50px!important}}
 .lxs{display:none}.scrim:has(> .mapsheet){overflow:hidden}
 html.desk .sheet.mapsheet{width:auto;max-width:none}html.desk .mapsheet .dmap{height:min(680px,78vh);width:auto;aspect-ratio:4/3}
 .lshort{display:none}
@@ -4912,6 +4914,10 @@ function memoryView(){
   let bi=0;const mk=b=>{const v=(era.marks||{})[m.i+':'+b];return v?` mk-${v}`:''};
   let story=`<div class="story">${(paras.length?paras:s.story.map(x=>[x])).map((sn,i)=>`<p class="fade" style="animation-delay:${i*.25}s">${sn.map(b=>{const k=bi++;return `<span class="snt${mk(k)}" data-b="${k}">${fillT(b)}</span>`}).join(' ')}</p>`).join('')}</div>`;
   (s.extra||[]).forEach(x=>{story+=`<div class="note"><b>${esc(x.src)}:</b> ${fillTokens(x.t)}</div>`});
+  // highlight / cross out: small icon buttons (desktop: the bottom row; phones: centred under the text, above the page dots)
+  const mb=(id,l,ico)=>`<button class="btn ghost light markbtn mb-${id}${ui.markMode===id?' on':''}" data-act="markmode" data-m="${id}" aria-pressed="${ui.markMode===id}" aria-label="${l}" title="${l}: turn on, then tap sentences in the memory. Tap a marked sentence again to clear it.">${ico}</button>`;
+  const marks=`<div class="memact markbtns">${mb('h','Highlight','<span class="hlsw" aria-hidden="true"></span>')}${mb('x','Cross out','<span class="xsw" aria-hidden="true">✕</span>')}</div>`;
+  if(!DESK) story+=`<div class="markrow pkeep">${marks.replace('memact markbtns','markbtns')}</div>`;
   h+=sec('story',story).replace('<section class="mtab','<section data-page="text" class="mtab');
   const also=era.scenes.map((x,i)=>i!==m.i&&x.present.includes(s.victim)?i:-1).filter(i=>i>=0);
   h+=sec('people',`<h3 class="memh">Present in this memory</h3><div class="present">${s.present.map(f=>chip(f)).join('')}</div>
@@ -4919,15 +4925,12 @@ function memoryView(){
     <h3 class="memh">${labelHTML(s.victim)} also appears in</h3>`+(also.length
     ?`<div class="present seenchips">${also.map(i=>memChip(i)).join('')}</div>`
     :`<p class="small light-muted">No other memory.</p>`));
-  // highlight / cross out: small icon buttons beside the memory's own buttons (see memnav)
-  const mb=(id,l,ico)=>`<button class="btn ghost light markbtn mb-${id}${ui.markMode===id?' on':''}" data-act="markmode" data-m="${id}" aria-pressed="${ui.markMode===id}" aria-label="${l}" title="${l}: turn on, then tap sentences in the memory. Tap a marked sentence again to clear it.">${ico}</button>`;
-  const marks=`<div class="memact markbtns">${mb('h','Highlight','<span class="hlsw" aria-hidden="true"></span>')}${mb('x','Cross out','<span class="xsw" aria-hidden="true">✕</span>')}</div>`;
   h+=sec('notes',notesBody(s.victim,' light')).replace('<section class="mtab','<section data-page="blocks" class="mtab');
   // phones: the memory and its notes are separate tabs, so marking happens on the Memory tab under a small bar
   h+=sec('fate',`<h3 class="memh">Your verdict on ${labelShort(s.victim)}</h3><div class="memform">${answerForm(s.victim)}</div>
     ${era.sealed[s.victim]?'':`<button class="btn ghost light debug" data-act="debugsolve" data-f="${s.victim}">Debug: fill in answer</button>`}`);
   if(DESK) return deskMemory(h,m,s,era,marks);
-  h+=`<div class="memnav${(ui.memTab||'story')==='story'?' onstory':''}"><div class="memact memtime">${m.i>0?`<button class="btn ghost light" data-act="memi" data-i="${m.i-1}" aria-label="Earlier in time"><span class="lfull">Earlier in time</span><span class="lshort">‹ Earlier</span></button>`:''}${m.i<era.scenes.length-1?`<button class="btn ghost light" data-act="memi" data-i="${m.i+1}" aria-label="Later in time"><span class="lfull">Later in time</span><span class="lshort">Later ›</span></button>`:''}</div>${marks}
+  h+=`<div class="memnav${(ui.memTab||'story')==='story'?' onstory':''}"><div class="memact memtime">${m.i>0?`<button class="btn ghost light" data-act="memi" data-i="${m.i-1}" aria-label="Earlier in time"><span class="lfull">Earlier in time</span><span class="lshort">‹ Earlier</span></button>`:''}${m.i<era.scenes.length-1?`<button class="btn ghost light" data-act="memi" data-i="${m.i+1}" aria-label="Later in time"><span class="lfull">Later in time</span><span class="lshort">Later ›</span></button>`:''}</div>
     <div class="memact"><button class="btn ghost light" data-act="replay" data-i="${m.i}"><span class="lfull">Watch the scene again</span><span class="lshort"><span class="lmid">Watch again</span><span class="lxs">Replay</span></span></button></div>
     <div class="memact"><button class="btn primary navbtn" data-act="closemem"><span class="lmid">Back to the dead</span><span class="lxs">Back</span></button></div></div>`;
   return h+`</div></div></div>`;
@@ -5122,15 +5125,15 @@ const GLASS=`<svg class="glass" viewBox="0 0 84 120" aria-hidden="true"><rect x=
 const PHONE_LS=matchMedia('(orientation:landscape) and (max-height:540px)');
 const DESK=document.documentElement.classList.contains('desk');   // desktop layout (inside the desktop frame)
 function paginate(el){
-  const items=[];
+  const items=[],keep=[...el.querySelectorAll(':scope > .pkeep')];keep.forEach(k=>k.remove());   // .pkeep: stays put under the pages (the mark buttons)
   const flat=n=>[...n.children].forEach(ch=>{
     if(el.dataset.page==='cols'?ch.matches('.pcols'):ch.matches('.psec,.pcols,section.tier,section.tierbox,.pgridt,.story,.seen')) flat(ch);
     else items.push(ch)});
   flat(el);
-  if(!items.length) return;
+  if(!items.length){keep.forEach(k=>el.append(k));return}
   const mode=el.dataset.page,track=document.createElement('div'),dots=document.createElement('div');
   track.className='ptrack';dots.className='pdots';
-  el.innerHTML='';el.classList.add('paged',mode==='text'?'ptext':mode==='cols'?'pcolsm':mode==='blocks'?'pblocks':'pgrid2');el.append(track,dots);
+  el.innerHTML='';el.classList.add('paged',mode==='text'?'ptext':mode==='cols'?'pcolsm':mode==='blocks'?'pblocks':'pgrid2');el.append(track,...keep,dots);
   let page=null;const newPage=()=>{page=document.createElement('div');page.className='pg';track.append(page);return page};
   newPage();
   const over=()=>mode==='cols'?page.scrollWidth>page.clientWidth+1:page.scrollHeight>page.clientHeight+1;
