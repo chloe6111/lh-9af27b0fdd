@@ -9,7 +9,7 @@
 /* Live site: the page itself can be cached for a while after a publish, while maps.js etc. come fresh, so an old page
    could show new data. version.txt holds the build stamp; if it differs, load the page again under a new URL.
    BUILD stays 'dev' in the project; stamp_build.py writes the stamp into dist/index.html and dist/version.txt. */
-(function(){var BUILD='20260929135512';if(BUILD==='dev'||window!==window.top||!window.fetch||location.protocol==='file:') return;
+(function(){var BUILD='20260929143442';if(BUILD==='dev'||window!==window.top||!window.fetch||location.protocol==='file:') return;
   fetch('version.txt?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.ok?r.text():''}).then(function(v){
     v=(v||'').trim();if(!v||v===BUILD) return;
     try{var k='lh-build-'+v;if(sessionStorage.getItem(k)) return;sessionStorage.setItem(k,'1')}catch(e){return}
@@ -966,7 +966,8 @@ html.nomotion .reglucky.luck,html.nomotion .reglucky.luck .regkey{animation:none
 #tipov .tipk{font:700 .72rem var(--num);letter-spacing:.14em;text-transform:uppercase;color:#d8b86a;margin-bottom:4px}
 #tipov .tipcard p{margin:0 0 10px;font-size:.98rem;line-height:1.45}
 #tipov .tipcard b{color:#f0d890;font-weight:600}
-#tipov .tipok{min-height:36px;padding:4px 20px;width:100%}
+#tipov .tipok{min-height:36px;padding:4px 20px;width:100%;visibility:hidden;opacity:0;transition:opacity .35s ease}#tipov .tipok.ready{visibility:visible;opacity:1}
+#tipov .tipcard p{line-height:1.45}
 html.nomotion #tipov .tiphole{animation:none}
 /* squarer landscape screens (an unfolded foldable, tablets): The Dead gets two rows of normally proportioned cards
    instead of one row of very thin ones; it still swipes sideways a column at a time */
@@ -5213,35 +5214,34 @@ const $vis=sel=>[...document.querySelectorAll(sel)].find(el=>{const r=el.getBoun
 const onDead=()=>S.screen==='play'&&ui.tab==='gather'&&!ui.mem&&!ui.cine&&!ui.modal&&!ui.pick&&!ui.sheet;
 const TIPS=[
   {id:'firstpick',when:()=>ui.modal&&ui.modal.kind==='boon'&&S.boon&&!S.boon.start&&(S.run.goodConsults||0)>=2,at:()=>$vis('.scrim .sheet'),
-   text:()=>'Two successful consultations: that’s earned you a relic. <b>Every second time the Ledger accepts your answers</b>, you get to pick one of these.'},
+   text:()=>'<b>Every second time the Ledger accepts your answers,</b> you get to pick one of these.'},
   {id:'hearts',when:()=>S.screen==='play'&&S.run.fails>=1&&!ui.modal&&!ui.mem&&!ui.cine&&!ui.pick,at:()=>$vis('.top .hearts'),
    text:()=>`The Ledger was silent, so you lost a heart. <b>You have ${S.run.hearts} left</b>; lose them all and the chronicle ends. <b>Every successful consultation wins a heart back</b> (up to ${START_HEARTS}), and hearts refill at the start of every era.`},
   {id:'verdict',when:()=>!!ui.mem&&!ui.cine&&!ui.modal&&!ui.pick&&!ui.sheet,at:()=>$vis('.mtab.on[data-t="fate"] .memform'),
-   text:()=>'Your goal for every person: <b>who they were, how they died, and who killed them</b> if someone did. You can change these answers any time. Nothing is final until you <b>Consult the Ledger</b>.'},
+   text:()=>'Find out: <b>who they were, how they died or if they survived.</b><br>You can change these answers at <b>any time.</b><br><b>Nothing is final until you Consult the Ledger.</b>'},
   {id:'people',when:()=>!!ui.mem&&!ui.cine&&!ui.modal&&!ui.pick&&!ui.sheet,at:()=>$vis('.mtab.on[data-t="people"] .present .chip'),
-   text:()=>'Everyone present in this memory. <b>Tap any of them</b> to open their card, see where else they appear, and record who you think they are.'},
+   text:()=>'<b>Tap any person’s bubble</b> to open their card.'},
   {id:'npulse',when:()=>!!ui.mem&&ui.notesPulse===ui.mem.i&&!ui.cine&&!ui.modal&&!ui.pick&&!ui.sheet,at:()=>$vis('.memory .mt.npulse'),
    text:()=>{const f=S.era.scenes[ui.mem.i].victim;return `The Notes tab glows when <b>this memory holds a clue about ${labelShort(f)} you haven’t tagged yet</b>: their voice, their job, a family tie or their name. Open Notes to tag it while it’s fresh.`}},
   {id:'notes',when:()=>!!ui.mem&&!ui.cine&&!ui.modal&&!ui.pick&&!ui.sheet,at:()=>$vis('.mtab.on[data-t="notes"] .ntagadd'),   // the memory's Notes tab only
-   text:()=>'Tag what you already know about this person (a relative, the kind of death, a role, a homeland) or jot a short note, so you can <b>come back and solve them later</b>.'},
+   text:()=>'<b>Tag what you know about this person.</b><br>This is critical for gathering and narrowing down information later.'},
   {id:'pages',when:()=>S.screen==='play'&&!ui.cine&&!ui.modal&&!ui.pick&&(ui.mem||ui.tab==='manifest'||ui.sheet),at:()=>$vis('.pdots'),
-   text:()=>DESK?'There’s more here than fits on one page. <b>Scroll the mouse wheel or click a dot</b> to turn the page; the bright dot shows where you are.':'There’s more here than fits on one page. <b>Swipe sideways or tap a dot</b> to turn the page; the bright dot shows where you are.'},
+   text:()=>DESK?'<b>Scroll the mouse wheel or click a dot to turn the page.</b>':'<b>Swipe sideways to turn the page.</b>'},
   {id:'marks',when:()=>!!ui.mem&&!ui.cine&&!ui.modal&&!ui.pick&&!ui.sheet&&(DESK||(ui.memTab||'story')==='story')&&(tipsSeen().includes('pages')||!$vis('.memory .pdots')),at:()=>$vis('.memnav .markbtns'),
-   text:()=>'Mark up the memory as you work it out. <b>Highlight</b> a line that matters, or <b>cross out</b> one you’ve dealt with: turn a button on, tap sentences, then tap the button again to stop. Tap a marked sentence again to clear it.'},
+   text:()=>'Mark up the memory as you work it out.<br><b>Highlight</b> a line that matters.<br><b>Cross out</b> ones you’ve dealt with.'},
   {id:'torn',when:()=>S.screen==='play'&&ui.tab==='manifest'&&!ui.modal&&!ui.pick&&!ui.sheet&&!ui.mem,
    at:()=>{const full=e=>{const r=e.getBoundingClientRect();return $visOne(e)&&r.left>=0&&r.right<=innerWidth};   // on the page you're looking at, not peeking from the next
      const all=[...document.querySelectorAll('.manifestv .row .nm')].filter(full);
      const el=all.find(e=>e.textContent.includes('?'))||all.find(e=>e.classList.contains('torn'));ui._tornEx=el&&el.textContent.includes('?')?el.textContent:null;return el?el.closest('.row')||el:null},
-   text:()=>{const ex=ui._tornEx;
-     return `Some pages of the manifest were damaged in the disaster. <b>Each ? is a letter you can’t read</b>${ex?`, so <span style="white-space:nowrap">“${esc(ex)}”</span> could be more than one name`:''}, and “[name torn away]” means the whole name is gone. A smudged homeland works the same way. Fill the gaps from what you hear in the memories (a voice, a shouted name, a monogram), or with relics like the Scholar’s Loupe, Archivist’s Paste and Customs Seal.`}},
+   text:()=>'<b>Each ? is a letter you can’t read.</b><br><b>[name torn away]</b> means the whole name is gone.<br>Solve through deduction or find relics to tell what they are.'},
   {id:'relics',when:()=>S.screen==='play'&&ui.tab==='satchel'&&!ui.modal&&!ui.pick&&!ui.sheet&&!ui.mem,at:()=>$vis('#app [data-act="tool"]:not([disabled])'),
-   text:()=>'Your relics live here. <b>Press Use</b> to activate one: most reveal something, like a name, a homeland or a cause of death. Relics without a Use button work on their own.'},
+   text:()=>'Press <b>Use</b> to activate a non-passive relic.'},
   {id:'num',when:onDead,at:()=>$vis('.pcard .pnum'),
-   text:()=>'This circle is the person’s number. <b>Until you prove who they are, “#1” is their name</b>: in memories, pickers and notes alike.'},
+   text:()=>'This circle is the person’s number.<br>Until you <b>prove</b> who they are, <b>“#1” is their name.</b>'},
   {id:'time',when:onDead,at:()=>$vis('.pcard .ptime'),
-   text:()=>'Once you’ve watched someone’s memory, the corner shows <b>the time it happened</b> that night. Line the times up to work out who was still alive when.'},
+   text:()=>'<b>This is the time it happened.</b><br>Line the times up to work out who was still alive then.'},
   {id:'consult',when:()=>onDead()&&!ui.modal&&!ui.pick&&!ui.sheet,at:()=>$vis('.topact [data-act="consult"]:not([disabled])')||$vis('[data-act="consult"]:not([disabled])'),   // once two or more answers are filled in
-   text:()=>`You’ve filled in enough verdicts to <b>Consult the Ledger</b>. If at least two of your open answers are fully right, it seals two of them and <b>you regain a heart</b> (up to ${START_HEARTS}). If not, you lose a heart.`},
+   text:()=>'The <b>minimum of 2 verdicts</b> have been made to <b>Consult the Ledger.</b><br>If <b>at least 2 of your answers are right</b>, it seals two of them and <b>you regain a missing heart.</b><br>If <b>not</b>, you <b>lose a heart.</b>'},
 ];
 function tutorialCheck(){
   if(!S||!S.run||!S.run.tutorial||ui.cine||document.getElementById('tipov')) return;
@@ -5253,6 +5253,7 @@ function tutorialCheck(){
     const el=t.at();if(el){showTip(t,el);return}
   }
 }
+const TIP_WAIT=5000;
 function showTip(t,el){
   const r=el.getBoundingClientRect(),pad=6,ov=document.createElement('div');
   ov.id='tipov';ov.setAttribute('role','dialog');ov.setAttribute('aria-label','Tip');
@@ -5267,8 +5268,9 @@ function showTip(t,el){
   let left=Math.max(minL,Math.min(innerWidth-cw-12,hole.l+hole.w/2-cw/2));
   if(top===Math.max(8,Math.min(innerHeight-ch-8,hole.t))&&!(below+ch<innerHeight-8)&&!(above>8)) left=hole.l+hole.w+14+cw<innerWidth?hole.l+hole.w+14:Math.max(minL,hole.l-cw-14);
   card.style.top=top+'px';card.style.left=left+'px';
-  const close=()=>{tipDone(t.id);if(t.id==='consult') ui.backFromMem=false;ov.remove();setTimeout(tutorialCheck,250)};
-  ov.querySelector('.tipok').addEventListener('click',e=>{e.stopPropagation();close()});
+  let ready=false;const ok=ov.querySelector('.tipok');setTimeout(()=>{ready=true;ok.classList.add('ready')},TIP_WAIT);   // read first: Got it shows after 5 s
+  const close=()=>{if(!ready) return;tipDone(t.id);if(t.id==='consult') ui.backFromMem=false;ov.remove();setTimeout(tutorialCheck,250)};
+  ok.addEventListener('click',e=>{e.stopPropagation();close()});
   ov.addEventListener('click',e=>{if(e.target===ov) close()});
 }
 // scrolling can bring a tip's target into view (a card further along the row, the next page)
