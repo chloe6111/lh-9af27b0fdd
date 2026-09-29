@@ -9,7 +9,7 @@
 /* Live site: the page itself can be cached for a while after a publish, while maps.js etc. come fresh, so an old page
    could show new data. version.txt holds the build stamp; if it differs, load the page again under a new URL.
    BUILD stays 'dev' in the project; stamp_build.py writes the stamp into dist/index.html and dist/version.txt. */
-(function(){var BUILD='20260929115402';if(BUILD==='dev'||window!==window.top||!window.fetch||location.protocol==='file:') return;
+(function(){var BUILD='20260929120111';if(BUILD==='dev'||window!==window.top||!window.fetch||location.protocol==='file:') return;
   fetch('version.txt?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.ok?r.text():''}).then(function(v){
     v=(v||'').trim();if(!v||v===BUILD) return;
     try{var k='lh-build-'+v;if(sessionStorage.getItem(k)) return;sessionStorage.setItem(k,'1')}catch(e){return}
@@ -1008,16 +1008,17 @@ html.marking .memory .snt:hover{outline:1px dashed rgba(232,200,112,.6)}
 .ntagadd .btn,.markbtns .btn{min-height:40px!important;padding:6px 16px!important;font-size:.95rem!important;line-height:1.2}
 .markbar-old{position:fixed;top:8px;left:50%;transform:translateX(-50%);z-index:90;display:flex;align-items:center;gap:12px;padding:6px 6px 6px 16px;border-radius:999px;background:#1b1812;border:1.5px solid #e8c870;box-shadow:0 8px 30px rgba(0,0,0,.6);color:#f3ecd8;font-size:.95rem;white-space:nowrap}
 .markbar.mb-x{border-color:#c0594a}.markbar .btn{min-height:32px;padding:2px 18px}
-.markbtns .markbtn{min-width:44px;padding:6px 12px!important}
-html.desk .memnav .markbtns .markbtn{min-height:44px!important}html.desk .memnav .markbtns{flex:1}html.desk .memnav .memact:first-child{flex:0 0 auto}
+.markbtns .markbtn{min-width:0;padding:0!important}
+html.desk .memnav .markbtns{align-items:center}html.desk .memnav .markbtns .markbtn{min-height:0!important;width:38px;height:38px;flex:0 0 38px!important}html.desk .memnav .markbtns{flex:1}html.desk .memnav .memact:first-child{flex:0 0 auto}
 .hlsw{display:inline-block;width:20px;height:14px;border-radius:3px;background:#e8c870;box-shadow:0 0 0 2px rgba(232,200,112,.35)}
 .xsw{font-weight:700;font-size:1.05rem;color:#e07a6a;line-height:1}
 .markbtn.on .xsw{color:#fff}
 @media (orientation:landscape) and (max-height:540px){
   .memnav:not(.onstory) .markbtns{display:none}
-  .memnav .memtime{flex:0 0 auto!important}.memnav .memtime .btn{flex:none;min-width:44px;padding-left:12px;padding-right:12px;font-size:1.1rem}
-  .memnav .markbtns{flex:1 1 auto!important}
-  .memnav .markbtns{gap:6px}.memnav .markbtns .markbtn{min-height:0!important;height:100%;padding:0 10px!important}
+  .memnav .memtime{flex:0 0 auto!important}.memnav .memtime .btn{flex:none}
+  .memnav .markbtns{flex:1 0 auto!important;flex-wrap:nowrap!important}
+  .memnav .markbtns{gap:5px;align-items:center}.memnav .markbtns .markbtn{min-height:0!important;width:30px;height:30px;min-width:0;padding:0!important;flex:0 0 30px!important}
+  .memnav .markbtns .hlsw{width:15px;height:10px}.memnav .markbtns .xsw{font-size:.9rem}
 }
 /* typing a note on a touch screen: the box sits at the top, above the on-screen keyboard */
 html.kbtyping .cnadd,html.kbtyping .gnadd{position:fixed!important;top:10px;left:12px;right:12px;z-index:400;margin:0!important;padding:10px;border-radius:14px;background:#1b1812;border:1.5px solid #d8b86a;box-shadow:0 10px 40px rgba(0,0,0,.7);display:flex;gap:8px}
@@ -1040,7 +1041,8 @@ html.kbtyping .cnadd .cnin,html.kbtyping .gnadd .cnin{flex:1;font-size:16px}
 @media (orientation:landscape) and (max-height:540px){.sheet.mapsheet{width:auto;max-width:none;height:auto;padding:0;background:none;box-shadow:none;border:0;display:flex;align-items:center;justify-content:center}.scrim:has(> .mapsheet){padding:8px}.mapsheet .dmap{height:min(calc(100dvh - 20px),calc((100vw - 24px)*.75));width:auto;aspect-ratio:4/3;border-radius:12px}.mapsheet .close-row{display:none}}
 .mapsheet{cursor:pointer}
 /* narrow landscape screens (the unfolded Fold's 700 px frame): shorter top-bar labels so the era title fits */
-@media (orientation:landscape) and (max-height:540px) and (max-width:780px){.topact .tlong{display:none}}.scrim:has(> .mapsheet){overflow:hidden}
+@media (orientation:landscape) and (max-height:540px) and (max-width:780px){.topact .tlong{display:none}.memnav .btn{font-size:.76rem;padding-left:9px;padding-right:9px}.memnav{gap:5px}.memnav .lmid{display:none}.memnav .lxs{display:inline}}
+.lxs{display:none}.scrim:has(> .mapsheet){overflow:hidden}
 html.desk .sheet.mapsheet{width:auto;max-width:none}html.desk .mapsheet .dmap{height:min(680px,78vh);width:auto;aspect-ratio:4/3}
 .lshort{display:none}
 /* phones held sideways: short labels so the four memory buttons always fit (narrow screens like a Fold), and no ✕ (Back to the dead does it) */
@@ -4923,8 +4925,8 @@ function memoryView(){
   h+=sec('fate',`<h3 class="memh">Your verdict on ${labelShort(s.victim)}</h3><div class="memform">${answerForm(s.victim)}</div>
     ${era.sealed[s.victim]?'':`<button class="btn ghost light debug" data-act="debugsolve" data-f="${s.victim}">Debug: fill in answer</button>`}`);
   if(DESK) return deskMemory(h,m,s,era,marks);
-  h+=`<div class="memnav${(ui.memTab||'story')==='story'?' onstory':''}"><div class="memact memtime">${m.i>0?`<button class="btn ghost light" data-act="memi" data-i="${m.i-1}" aria-label="Earlier in time"><span class="lfull">Earlier in time</span><span class="lshort">‹</span></button>`:''}${m.i<era.scenes.length-1?`<button class="btn ghost light" data-act="memi" data-i="${m.i+1}" aria-label="Later in time"><span class="lfull">Later in time</span><span class="lshort">›</span></button>`:''}</div>${marks}
-    <div class="memact"><button class="btn ghost light" data-act="replay" data-i="${m.i}"><span class="lfull">Watch the scene again</span><span class="lshort">Watch again</span></button></div>
+  h+=`<div class="memnav${(ui.memTab||'story')==='story'?' onstory':''}"><div class="memact memtime">${m.i>0?`<button class="btn ghost light" data-act="memi" data-i="${m.i-1}" aria-label="Earlier in time"><span class="lfull">Earlier in time</span><span class="lshort">‹ Earlier</span></button>`:''}${m.i<era.scenes.length-1?`<button class="btn ghost light" data-act="memi" data-i="${m.i+1}" aria-label="Later in time"><span class="lfull">Later in time</span><span class="lshort">Later ›</span></button>`:''}</div>${marks}
+    <div class="memact"><button class="btn ghost light" data-act="replay" data-i="${m.i}"><span class="lfull">Watch the scene again</span><span class="lshort"><span class="lmid">Watch again</span><span class="lxs">Replay</span></span></button></div>
     <div class="memact"><button class="btn primary" data-act="closemem">Back to the dead</button></div></div>`;
   return h+`</div></div></div>`;
 }
@@ -5211,6 +5213,8 @@ const TIPS=[
    text:()=>'Tag what you already know about this person (a relative, the kind of death, a role, a homeland) or jot a short note, so you can <b>come back and solve them later</b>.'},
   {id:'pages',when:()=>S.screen==='play'&&!ui.cine&&!ui.modal&&!ui.pick&&(ui.mem||ui.tab==='manifest'||ui.sheet),at:()=>$vis('.pdots'),
    text:()=>DESK?'There’s more here than fits on one page. <b>Scroll the mouse wheel or click a dot</b> to turn the page; the bright dot shows where you are.':'There’s more here than fits on one page. <b>Swipe sideways or tap a dot</b> to turn the page; the bright dot shows where you are.'},
+  {id:'marks',when:()=>!!ui.mem&&!ui.cine&&!ui.modal&&!ui.pick&&!ui.sheet&&(DESK||(ui.memTab||'story')==='story')&&(tipsSeen().includes('pages')||!$vis('.memory .pdots')),at:()=>$vis('.memnav .markbtns'),
+   text:()=>'Mark up the memory as you work it out. <b>Highlight</b> a line that matters, or <b>cross out</b> one you’ve dealt with: turn a button on, tap sentences, then tap the button again to stop. Tap a marked sentence again to clear it.'},
   {id:'relics',when:()=>S.screen==='play'&&ui.tab==='satchel'&&!ui.modal&&!ui.pick&&!ui.sheet&&!ui.mem,at:()=>$vis('#app [data-act="tool"]:not([disabled])'),
    text:()=>'Your relics live here. <b>Press Use</b> to activate one: most reveal something, like a name, a homeland or a cause of death. Relics without a Use button work on their own.'},
   {id:'num',when:onDead,at:()=>$vis('.pcard .pnum'),
