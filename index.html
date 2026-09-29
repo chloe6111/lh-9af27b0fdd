@@ -9,7 +9,7 @@
 /* Live site: the page itself can be cached for a while after a publish, while maps.js etc. come fresh, so an old page
    could show new data. version.txt holds the build stamp; if it differs, load the page again under a new URL.
    BUILD stays 'dev' in the project; stamp_build.py writes the stamp into dist/index.html and dist/version.txt. */
-(function(){var BUILD='20260929120111';if(BUILD==='dev'||window!==window.top||!window.fetch||location.protocol==='file:') return;
+(function(){var BUILD='20260929120633';if(BUILD==='dev'||window!==window.top||!window.fetch||location.protocol==='file:') return;
   fetch('version.txt?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.ok?r.text():''}).then(function(v){
     v=(v||'').trim();if(!v||v===BUILD) return;
     try{var k='lh-build-'+v;if(sessionStorage.getItem(k)) return;sessionStorage.setItem(k,'1')}catch(e){return}
@@ -1009,15 +1009,16 @@ html.marking .memory .snt:hover{outline:1px dashed rgba(232,200,112,.6)}
 .markbar-old{position:fixed;top:8px;left:50%;transform:translateX(-50%);z-index:90;display:flex;align-items:center;gap:12px;padding:6px 6px 6px 16px;border-radius:999px;background:#1b1812;border:1.5px solid #e8c870;box-shadow:0 8px 30px rgba(0,0,0,.6);color:#f3ecd8;font-size:.95rem;white-space:nowrap}
 .markbar.mb-x{border-color:#c0594a}.markbar .btn{min-height:32px;padding:2px 18px}
 .markbtns .markbtn{min-width:0;padding:0!important}
-html.desk .memnav .markbtns{align-items:center}html.desk .memnav .markbtns .markbtn{min-height:0!important;width:38px;height:38px;flex:0 0 38px!important}html.desk .memnav .markbtns{flex:1}html.desk .memnav .memact:first-child{flex:0 0 auto}
+html.desk .memnav .markbtns{align-items:stretch}html.desk .memnav .markbtns .markbtn{min-height:44px!important;width:72px;height:auto;flex:0 0 72px!important}
+html.desk .memnav [data-act="memi"],html.desk .memnav [data-act="closemem"]{width:170px;flex:none}html.desk .memnav .markbtns{flex:1}html.desk .memnav .memact:first-child{flex:0 0 auto}
 .hlsw{display:inline-block;width:20px;height:14px;border-radius:3px;background:#e8c870;box-shadow:0 0 0 2px rgba(232,200,112,.35)}
 .xsw{font-weight:700;font-size:1.05rem;color:#e07a6a;line-height:1}
 .markbtn.on .xsw{color:#fff}
 @media (orientation:landscape) and (max-height:540px){
   .memnav:not(.onstory) .markbtns{display:none}
-  .memnav .memtime{flex:0 0 auto!important}.memnav .memtime .btn{flex:none}
+  .memnav .memtime{flex:0 0 auto!important}.memnav .memtime .btn,.memnav .navbtn{flex:none;width:110px;padding-left:6px;padding-right:6px}
   .memnav .markbtns{flex:1 0 auto!important;flex-wrap:nowrap!important}
-  .memnav .markbtns{gap:5px;align-items:center}.memnav .markbtns .markbtn{min-height:0!important;width:30px;height:30px;min-width:0;padding:0!important;flex:0 0 30px!important}
+  .memnav .markbtns{gap:6px;align-items:stretch}.memnav .markbtns .markbtn{min-height:34px!important;width:58px;height:auto;min-width:0;padding:0!important;flex:0 0 58px!important}
   .memnav .markbtns .hlsw{width:15px;height:10px}.memnav .markbtns .xsw{font-size:.9rem}
 }
 /* typing a note on a touch screen: the box sits at the top, above the on-screen keyboard */
@@ -1041,7 +1042,8 @@ html.kbtyping .cnadd .cnin,html.kbtyping .gnadd .cnin{flex:1;font-size:16px}
 @media (orientation:landscape) and (max-height:540px){.sheet.mapsheet{width:auto;max-width:none;height:auto;padding:0;background:none;box-shadow:none;border:0;display:flex;align-items:center;justify-content:center}.scrim:has(> .mapsheet){padding:8px}.mapsheet .dmap{height:min(calc(100dvh - 20px),calc((100vw - 24px)*.75));width:auto;aspect-ratio:4/3;border-radius:12px}.mapsheet .close-row{display:none}}
 .mapsheet{cursor:pointer}
 /* narrow landscape screens (the unfolded Fold's 700 px frame): shorter top-bar labels so the era title fits */
-@media (orientation:landscape) and (max-height:540px) and (max-width:780px){.topact .tlong{display:none}.memnav .btn{font-size:.76rem;padding-left:9px;padding-right:9px}.memnav{gap:5px}.memnav .lmid{display:none}.memnav .lxs{display:inline}}
+@media (orientation:landscape) and (max-height:540px) and (max-width:780px){.topact .tlong{display:none}.memnav .btn{font-size:.74rem;padding-left:4px!important;padding-right:4px!important}.memnav{gap:5px}.memnav .lmid{display:none}.memnav .lxs{display:inline}
+  .memnav .memtime .btn,.memnav .navbtn{width:64px}.memnav .markbtns .markbtn{width:42px;flex:0 0 42px!important}}
 .lxs{display:none}.scrim:has(> .mapsheet){overflow:hidden}
 html.desk .sheet.mapsheet{width:auto;max-width:none}html.desk .mapsheet .dmap{height:min(680px,78vh);width:auto;aspect-ratio:4/3}
 .lshort{display:none}
@@ -4927,7 +4929,7 @@ function memoryView(){
   if(DESK) return deskMemory(h,m,s,era,marks);
   h+=`<div class="memnav${(ui.memTab||'story')==='story'?' onstory':''}"><div class="memact memtime">${m.i>0?`<button class="btn ghost light" data-act="memi" data-i="${m.i-1}" aria-label="Earlier in time"><span class="lfull">Earlier in time</span><span class="lshort">‹ Earlier</span></button>`:''}${m.i<era.scenes.length-1?`<button class="btn ghost light" data-act="memi" data-i="${m.i+1}" aria-label="Later in time"><span class="lfull">Later in time</span><span class="lshort">Later ›</span></button>`:''}</div>${marks}
     <div class="memact"><button class="btn ghost light" data-act="replay" data-i="${m.i}"><span class="lfull">Watch the scene again</span><span class="lshort"><span class="lmid">Watch again</span><span class="lxs">Replay</span></span></button></div>
-    <div class="memact"><button class="btn primary" data-act="closemem">Back to the dead</button></div></div>`;
+    <div class="memact"><button class="btn primary navbtn" data-act="closemem"><span class="lmid">Back to the dead</span><span class="lxs">Back</span></button></div></div>`;
   return h+`</div></div></div>`;
 }
 /* desktop memory screen, built from the sections memoryView() has made: portrait | story | side column with tabs */
