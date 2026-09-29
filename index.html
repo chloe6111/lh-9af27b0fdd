@@ -9,7 +9,7 @@
 /* Live site: the page itself can be cached for a while after a publish, while maps.js etc. come fresh, so an old page
    could show new data. version.txt holds the build stamp; if it differs, load the page again under a new URL.
    BUILD stays 'dev' in the project; stamp_build.py writes the stamp into dist/index.html and dist/version.txt. */
-(function(){var BUILD='20260928232842';if(BUILD==='dev'||window!==window.top||!window.fetch||location.protocol==='file:') return;
+(function(){var BUILD='20260929114820';if(BUILD==='dev'||window!==window.top||!window.fetch||location.protocol==='file:') return;
   fetch('version.txt?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.ok?r.text():''}).then(function(v){
     v=(v||'').trim();if(!v||v===BUILD) return;
     try{var k='lh-build-'+v;if(sessionStorage.getItem(k)) return;sessionStorage.setItem(k,'1')}catch(e){return}
@@ -5156,6 +5156,11 @@ document.addEventListener('click',e=>{
 /* in the desktop frame, the window can change size (fullscreen on/off, resizing); lay the pages out again once it settles.
    (Not on phones: the on-screen keyboard resizes the page, and a re-render would drop the text box.) */
 if(document.documentElement.classList.contains('inframe')){let rt=0;window.addEventListener('resize',()=>{clearTimeout(rt);rt=setTimeout(()=>{if(document.activeElement&&/^(INPUT|TEXTAREA)$/.test(document.activeElement.tagName)) return;if(typeof render==='function') render()},300)})}
+/* phones (the page itself, not a frame): pages are cut to the screen when drawn, so a rotation (e.g. coming back to the
+   app held upright, then turning it sideways) needs a redraw. Only a real width change counts: the keyboard changes the height. */
+else{let rw=0,lw=window.innerWidth;const rr=()=>{clearTimeout(rw);rw=setTimeout(()=>{const w=window.innerWidth;if(Math.abs(w-lw)<40) return;lw=w;
+  if(document.activeElement&&/^(INPUT|TEXTAREA)$/.test(document.activeElement.tagName)) return;if(typeof render==='function'&&S) render()},300)};
+  window.addEventListener('resize',rr);window.addEventListener('orientationchange',rr);document.addEventListener('visibilitychange',()=>{if(!document.hidden) rr()})}
 /* desktop hierarchy chart: after drawing, shrink the figures until every station fits (estimates can't know every border) */
 function fitChart(){
   const sh=document.querySelector('.dchart');if(!sh) return;
