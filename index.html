@@ -9,7 +9,7 @@
 /* Live site: the page itself can be cached for a while after a publish, while maps.js etc. come fresh, so an old page
    could show new data. version.txt holds the build stamp; if it differs, load the page again under a new URL.
    BUILD stays 'dev' in the project; stamp_build.py writes the stamp into dist/index.html and dist/version.txt. */
-(function(){var BUILD='20260929134336';if(BUILD==='dev'||window!==window.top||!window.fetch||location.protocol==='file:') return;
+(function(){var BUILD='20260929135512';if(BUILD==='dev'||window!==window.top||!window.fetch||location.protocol==='file:') return;
   fetch('version.txt?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.ok?r.text():''}).then(function(v){
     v=(v||'').trim();if(!v||v===BUILD) return;
     try{var k='lh-build-'+v;if(sessionStorage.getItem(k)) return;sessionStorage.setItem(k,'1')}catch(e){return}
@@ -5208,6 +5208,7 @@ function tutorialPref(){try{return localStorage.getItem('the-last-hour-tutorial'
 const TIP_KEY='the-last-hour-tips';
 const tipsSeen=()=>{try{return JSON.parse(localStorage.getItem(TIP_KEY)||'[]')}catch(e){return []}};
 const tipDone=id=>{try{const a=tipsSeen();if(!a.includes(id)){a.push(id);localStorage.setItem(TIP_KEY,JSON.stringify(a))}}catch(e){}};
+const $visOne=el=>{const r=el.getBoundingClientRect();return r.width>2&&r.height>2&&r.bottom>0&&r.right>0&&r.top<innerHeight&&r.left<innerWidth&&getComputedStyle(el).visibility!=='hidden'};
 const $vis=sel=>[...document.querySelectorAll(sel)].find(el=>{const r=el.getBoundingClientRect();return r.width>2&&r.height>2&&r.bottom>0&&r.right>0&&r.top<innerHeight&&r.left<innerWidth&&getComputedStyle(el).visibility!=='hidden'});
 const onDead=()=>S.screen==='play'&&ui.tab==='gather'&&!ui.mem&&!ui.cine&&!ui.modal&&!ui.pick&&!ui.sheet;
 const TIPS=[
@@ -5227,6 +5228,12 @@ const TIPS=[
    text:()=>DESK?'There’s more here than fits on one page. <b>Scroll the mouse wheel or click a dot</b> to turn the page; the bright dot shows where you are.':'There’s more here than fits on one page. <b>Swipe sideways or tap a dot</b> to turn the page; the bright dot shows where you are.'},
   {id:'marks',when:()=>!!ui.mem&&!ui.cine&&!ui.modal&&!ui.pick&&!ui.sheet&&(DESK||(ui.memTab||'story')==='story')&&(tipsSeen().includes('pages')||!$vis('.memory .pdots')),at:()=>$vis('.memnav .markbtns'),
    text:()=>'Mark up the memory as you work it out. <b>Highlight</b> a line that matters, or <b>cross out</b> one you’ve dealt with: turn a button on, tap sentences, then tap the button again to stop. Tap a marked sentence again to clear it.'},
+  {id:'torn',when:()=>S.screen==='play'&&ui.tab==='manifest'&&!ui.modal&&!ui.pick&&!ui.sheet&&!ui.mem,
+   at:()=>{const full=e=>{const r=e.getBoundingClientRect();return $visOne(e)&&r.left>=0&&r.right<=innerWidth};   // on the page you're looking at, not peeking from the next
+     const all=[...document.querySelectorAll('.manifestv .row .nm')].filter(full);
+     const el=all.find(e=>e.textContent.includes('?'))||all.find(e=>e.classList.contains('torn'));ui._tornEx=el&&el.textContent.includes('?')?el.textContent:null;return el?el.closest('.row')||el:null},
+   text:()=>{const ex=ui._tornEx;
+     return `Some pages of the manifest were damaged in the disaster. <b>Each ? is a letter you can’t read</b>${ex?`, so <span style="white-space:nowrap">“${esc(ex)}”</span> could be more than one name`:''}, and “[name torn away]” means the whole name is gone. A smudged homeland works the same way. Fill the gaps from what you hear in the memories (a voice, a shouted name, a monogram), or with relics like the Scholar’s Loupe, Archivist’s Paste and Customs Seal.`}},
   {id:'relics',when:()=>S.screen==='play'&&ui.tab==='satchel'&&!ui.modal&&!ui.pick&&!ui.sheet&&!ui.mem,at:()=>$vis('#app [data-act="tool"]:not([disabled])'),
    text:()=>'Your relics live here. <b>Press Use</b> to activate one: most reveal something, like a name, a homeland or a cause of death. Relics without a Use button work on their own.'},
   {id:'num',when:onDead,at:()=>$vis('.pcard .pnum'),
