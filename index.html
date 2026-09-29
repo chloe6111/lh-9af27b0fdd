@@ -9,7 +9,7 @@
 /* Live site: the page itself can be cached for a while after a publish, while maps.js etc. come fresh, so an old page
    could show new data. version.txt holds the build stamp; if it differs, load the page again under a new URL.
    BUILD stays 'dev' in the project; stamp_build.py writes the stamp into dist/index.html and dist/version.txt. */
-(function(){var BUILD='20260928150111';if(BUILD==='dev'||window!==window.top||!window.fetch||location.protocol==='file:') return;
+(function(){var BUILD='20260928231512';if(BUILD==='dev'||window!==window.top||!window.fetch||location.protocol==='file:') return;
   fetch('version.txt?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.ok?r.text():''}).then(function(v){
     v=(v||'').trim();if(!v||v===BUILD) return;
     try{var k='lh-build-'+v;if(sessionStorage.getItem(k)) return;sessionStorage.setItem(k,'1')}catch(e){return}
@@ -997,6 +997,15 @@ html.nomotion #tipov .tiphole{animation:none}
 .seedform{display:flex;gap:8px;margin:10px 0}.seedin{flex:1;min-width:0;min-height:40px;padding:6px 14px;border-radius:10px;border:1px solid #4a4538;background:#12110d;color:#f3ecd8;font:700 1.2rem var(--num);letter-spacing:.18em;text-transform:uppercase}
 .seedsheet{max-width:460px}.seedrow{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin:8px 0 4px}.seedcode{font-family:var(--num);letter-spacing:.12em;color:#e8c870}
 .seedline{margin:0 0 6px}
+/* marking sentences in a memory */
+.snt.mk-h{background:rgba(232,200,112,.34);border-radius:3px;box-decoration-break:clone;-webkit-box-decoration-break:clone;box-shadow:0 0 0 2px rgba(232,200,112,.34)}
+.snt.mk-x{text-decoration:line-through;text-decoration-thickness:2px;text-decoration-color:#c0594a;opacity:.5}
+html.marking .memory .snt{cursor:pointer;border-radius:3px}
+html.marking .memory .snt:hover{outline:1px dashed rgba(232,200,112,.6)}
+.markbtns{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 4px}.markbtn.mb-h.on{background:#6b5a1e;border-color:#e8c870;color:#fff}.markbtn.mb-x.on{background:#5a241e;border-color:#c0594a;color:#fff}
+.markhint{margin:2px 0 10px}
+.markbar{position:fixed;top:8px;left:50%;transform:translateX(-50%);z-index:90;display:flex;align-items:center;gap:12px;padding:6px 6px 6px 16px;border-radius:999px;background:#1b1812;border:1.5px solid #e8c870;box-shadow:0 8px 30px rgba(0,0,0,.6);color:#f3ecd8;font-size:.95rem;white-space:nowrap}
+.markbar.mb-x{border-color:#c0594a}.markbar .btn{min-height:32px;padding:2px 18px}
 /* typing a note on a touch screen: the box sits at the top, above the on-screen keyboard */
 html.kbtyping .cnadd,html.kbtyping .gnadd{position:fixed!important;top:10px;left:12px;right:12px;z-index:400;margin:0!important;padding:10px;border-radius:14px;background:#1b1812;border:1.5px solid #d8b86a;box-shadow:0 10px 40px rgba(0,0,0,.7);display:flex;gap:8px}
 html.kbtyping .cnadd .cnin,html.kbtyping .gnadd .cnin{flex:1;font-size:16px}
@@ -4523,7 +4532,7 @@ function applyTarget(tool,f){
 const ordinal=n=>n+(['th','st','nd','rd'][(n%100-20)%10]||['th','st','nd','rd'][n%100]||'th');
 const cinePref=()=>{try{return localStorage.getItem('the-last-hour-cutscenes')==='off'?'off':'on'}catch(e){return 'on'}};
 function openMemory(i,replay){
-  const era=S.era;ui.sheet=null;ui.notesNot=false;ui.memTab='story';clearTimeout(ui.cineT);
+  const era=S.era;ui.sheet=null;ui.notesNot=false;ui.markMode=null;ui.memTab='story';clearTimeout(ui.cineT);
   const first=!era.viewed.includes(i);
   if(first){era.viewed.push(i);save()}
   if((first&&cinePref()==='on')||replay){ui.mem=null;ui.cine={i,k:0};render();ui.cineT=setTimeout(tickCine,beatDur());return}
@@ -4608,7 +4617,9 @@ function render(){
   {const ov=document.getElementById('tipov');if(ov) ov.remove()}
   if(!S){app.innerHTML=titleScreen()+(ui.modal?modalView():'');document.documentElement.classList.add('noscroll');runPaging();return}
   if(S.screen==='play'&&S.boon&&S.boon.left>0&&!ui.modal&&!ui.cine) openBoon();
-  {const nk=(ui.sheet?'s'+ui.sheet.f+(ui.sheet.t||''):'')+(ui.mem?'m'+ui.mem.i+(ui.memTab||''):'');if(nk!==ui._nk){ui._nk=nk;ui.notesNot=false}}   // Not starts off on every Notes tab you come to   // an unpicked relic always comes back
+  {const nk=(ui.sheet?'s'+ui.sheet.f+(ui.sheet.t||''):'')+(ui.mem?'m'+ui.mem.i+(ui.memTab||''):'');if(nk!==ui._nk){ui._nk=nk;ui.notesNot=false}}
+  {const mk2=ui.mem?'m'+ui.mem.i:'';if(mk2!==ui._mk){ui._mk=mk2;ui.markMode=null}}   // a different memory (or none): marking is off
+  document.documentElement.classList.toggle('marking',!!(ui.markMode&&ui.mem));   // Not starts off on every Notes tab you come to   // an unpicked relic always comes back
   const sc=S.screen;let h='';
   if(sc==='intro') h=introScreen();
   else if(sc==='play') h=playScreen();
@@ -4881,7 +4892,8 @@ function memoryView(){
   h+=`<div class="memleft"><div class="membust">${pic(s.victim)}${badges(s.victim)}</div></div><div class="memright">`;
   h+=`<div class="memtabs" role="tablist">${[['story','Memory'],['people','People'],['notes','Notes'],['fate','Verdict']].map(([id,l])=>`<button role="tab" class="mt${tab===id?' on':''}" aria-selected="${tab===id}" data-act="memtab" data-t="${id}">${l}</button>`).join('')}</div>`;
   const paras=[];if(s.beats){let k=0;s.story.forEach(par=>{const sn=[];let acc='';while(k<s.beats.length&&acc.length<par.length){sn.push(s.beats[k]);acc=(acc?acc+' ':'')+s.beats[k];k++}paras.push(sn)})}
-  let story=`<div class="story">${(paras.length?paras:s.story.map(x=>[x])).map((sn,i)=>`<p class="fade" style="animation-delay:${i*.25}s">${sn.map(b=>`<span class="snt">${fillT(b)}</span>`).join(' ')}</p>`).join('')}</div>`;
+  let bi=0;const mk=b=>{const v=(era.marks||{})[m.i+':'+b];return v?` mk-${v}`:''};
+  let story=`<div class="story">${(paras.length?paras:s.story.map(x=>[x])).map((sn,i)=>`<p class="fade" style="animation-delay:${i*.25}s">${sn.map(b=>{const k=bi++;return `<span class="snt${mk(k)}" data-b="${k}">${fillT(b)}</span>`}).join(' ')}</p>`).join('')}</div>`;
   (s.extra||[]).forEach(x=>{story+=`<div class="note"><b>${esc(x.src)}:</b> ${fillTokens(x.t)}</div>`});
   h+=sec('story',story).replace('<section class="mtab','<section data-page="text" class="mtab');
   const also=era.scenes.map((x,i)=>i!==m.i&&x.present.includes(s.victim)?i:-1).filter(i=>i>=0);
@@ -4890,7 +4902,10 @@ function memoryView(){
     <h3 class="memh">${labelHTML(s.victim)} also appears in</h3>`+(also.length
     ?`<div class="present seenchips">${also.map(i=>memChip(i)).join('')}</div>`
     :`<p class="small light-muted">No other memory.</p>`));
-  h+=sec('notes',notesBody(s.victim,' light')).replace('<section class="mtab','<section data-page="blocks" class="mtab');
+  const mb=(id,l)=>`<button class="btn ghost light markbtn mb-${id}${ui.markMode===id?' on':''}" data-act="markmode" data-m="${id}" aria-pressed="${ui.markMode===id}">${l}</button>`;
+  h+=sec('notes',`<h3 class="memh">Mark the memory</h3><div class="markbtns">${mb('h','Highlight')}${mb('x','Cross out')}</div><p class="small light-muted markhint">Turn one on, then tap sentences in the memory. Tap a marked sentence again to clear it.</p>`+notesBody(s.victim,' light')).replace('<section class="mtab','<section data-page="blocks" class="mtab');
+  // phones: the memory and its notes are separate tabs, so marking happens on the Memory tab under a small bar
+  if(ui.markMode&&!DESK) h+=`<div class="markbar mb-${ui.markMode}"><span>${ui.markMode==='h'?'Highlighting':'Crossing out'}: tap sentences</span><button class="btn primary" data-act="markmode" data-m="off">Done</button></div>`;
   h+=sec('fate',`<h3 class="memh">Your verdict on ${labelShort(s.victim)}</h3><div class="memform">${answerForm(s.victim)}</div>
     ${era.sealed[s.victim]?'':`<button class="btn ghost light debug" data-act="debugsolve" data-f="${s.victim}">Debug: fill in answer</button>`}`);
   if(DESK) return deskMemory(h,m,s,era);
@@ -5232,6 +5247,7 @@ document.addEventListener('click',e=>{
     case 'sheettab':ui.sheet.t=b.dataset.t;ui.notesNot=false;render();break;
     case 'opentag':ui.pick={kind:'tag',tk:b.dataset.k,f:+b.dataset.f,not:!!ui.notesNot};render();break;
     case 'nottoggle':ui.notesNot=!ui.notesNot;render();break;
+    case 'markmode':{const md=b.dataset.m;if(md==='off'||ui.markMode===md){ui.markMode=null;if(!DESK) ui.memTab='notes'}else{ui.markMode=md;if(!DESK) ui.memTab='story'}render();break}
     case 'gnname':{const inp=document.querySelector('.gnin');ui.gDraft=Object.assign({},ui.gDraft,{v:inp?inp.value:''});if(e.target.closest('[data-act="gnclear"]')){ui.gDraft.c=null;render();break}ui.pick={kind:'gname'};render();break}
     case 'gnclear':{const inp=document.querySelector('.gnin');ui.gDraft={v:inp?inp.value:'',c:null};render();break}
     case 'gnamed':ui.gDraft=Object.assign({},ui.gDraft,{c:b.dataset.v===''?null:+b.dataset.v});ui.pick=null;render();break;
@@ -5243,7 +5259,7 @@ document.addEventListener('click',e=>{
     case 'untag':{const p=pnote(+b.dataset.f),k=b.dataset.k,v=tagConv(k,b.dataset.v),i=p[k].indexOf(v);if(i>=0) p[k].splice(i,1);save();render();break}
     case 'addnote':addNote(+b.dataset.f);break;
     case 'delnote':pnote(+b.dataset.f).custom.splice(+b.dataset.i,1);save();render();break;
-    case 'memtab':ui.memTab=b.dataset.t;ui.notesNot=false;render();{const el=document.querySelector('.mtab.on');if(el) el.scrollTop=0}break;
+    case 'memtab':ui.memTab=b.dataset.t;ui.notesNot=false;ui.markMode=null;render();{const el=document.querySelector('.mtab.on');if(el) el.scrollTop=0}break;
     case 'openpick':ui.pick={kind:b.dataset.kind,f:+b.dataset.f};render();{const pb=document.querySelector('.picker .ptile.on');if(pb) pb.scrollIntoView({block:'center'})}break;
     case 'picked':{const {kind,f}=ui.pick;ui.pick=null;setAnswer(f,kind,b.dataset.v===''?null:b.dataset.v);break}
     case 'closepick':ui.pick=null;render();break;
@@ -5320,6 +5336,15 @@ function kbCheck(){const a=document.activeElement;document.documentElement.class
 document.addEventListener('focusin',kbCheck);document.addEventListener('focusout',()=>setTimeout(kbCheck,0));
 document.addEventListener('submit',e=>{const fm=e.target.closest('.cnadd');if(!fm) return;e.preventDefault();addNote(+fm.dataset.f,fm.querySelector('.cnin'))});
 document.addEventListener('input',e=>{if(e.target.matches('.gnin')){ui.gDraft=Object.assign({},ui.gDraft,{v:e.target.value});return}if(e.target.matches('.cnin')) ui.noteDraft={f:+e.target.dataset.f,v:e.target.value}});
+document.addEventListener('click',e=>{
+  if(!ui.markMode||!ui.mem||!S||!S.era) return;
+  const sp=e.target.closest('.memory .snt');if(!sp) return;
+  e.preventDefault();e.stopPropagation();   // a name chip or a place inside the sentence doesn't open while marking
+  const era=S.era,k=ui.mem.i+':'+sp.dataset.b,marks=era.marks=era.marks||{},md=ui.markMode;
+  if(marks[k]===md) delete marks[k];else marks[k]=md;
+  sp.classList.remove('mk-h','mk-x');if(marks[k]) sp.classList.add('mk-'+marks[k]);
+  save();
+},true);
 document.addEventListener('submit',e=>{const fm=e.target.closest('.seedform');if(!fm) return;e.preventDefault();
   const code=cleanCode(fm.querySelector('.seedin').value);if(code.length<4){toast('That seed doesn’t look right.');return}
   ui.modal=null;ART.clear();newRun(null,{code,shared:true})});
